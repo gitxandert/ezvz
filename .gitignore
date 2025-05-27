@@ -1,0 +1,10 @@
+# Visual Studio
+*.vcxproj*
+*.suo
+.vs/
+build/
+bin/
+obj/
+glfw/
+glm/
+*.exe
