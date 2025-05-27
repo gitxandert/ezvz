@@ -38,7 +38,7 @@ struct TimelineTrack {
 
     float lastLocalTime = 0.0f;
 
-	std::array<std::vector<std::unique_ptr<Mapping>>, static_cast<int>(AudioParameter::COUNT)> mappings;
+	std::array<std::vector<std::shared_ptr<Mapping>>, static_cast<int>(AudioParameter::COUNT)> mappings;
 
     void computeComplementaryColor();
 	float getParamValue(AudioParameter param) const;

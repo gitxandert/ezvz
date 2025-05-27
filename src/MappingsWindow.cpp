@@ -15,7 +15,7 @@ namespace MappingsWindow {
 
 	static bool isMappingSelected = false; // Flag to track if a mapping is selected
 	static int selectedMappingIndex = -1; // Index of the selected mapping
-	Mapping* selectedMapping = nullptr; // Pointer to the selected mapping
+	std::shared_ptr<Mapping> selectedMapping = nullptr; // Pointer to the selected mapping
 
 	void renderMappingsPopup() {
 		if (ImGui::BeginPopup("MappingsPopUp")) {
@@ -64,7 +64,7 @@ namespace MappingsWindow {
 		ImGui::NewLine();
 
 		if(selectedTrack->mappings[p_index].size() > 0){
-			std::vector<std::unique_ptr<Mapping>>& cur_mappings = selectedTrack->mappings[p_index];
+			std::vector<std::shared_ptr<Mapping>>& cur_mappings = selectedTrack->mappings[p_index];
 			for (std::size_t i = 0; i < cur_mappings.size(); ++i) {
 				ImGui::SameLine();
 				bool is_selected = (i == ScenesPanel::mappingIndex);
@@ -72,7 +72,7 @@ namespace MappingsWindow {
 				if (ImGui::Selectable(label.c_str(), is_selected, 0, {100, 0})) {
 					isMappingSelected = true;
 					selectedMappingIndex = i; 
-					selectedMapping = cur_mappings[i].get();
+					selectedMapping = cur_mappings[i];
 					ScenesPanel::mappingIndex = static_cast<int>(selectedMapping->getGraphicParameter());
 				}
 			}

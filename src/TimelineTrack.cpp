@@ -48,13 +48,13 @@ float TimelineTrack::getParamValue(AudioParameter param) const {
 }
 
 void TimelineTrack::updateMappings() {
-    for (std::size_t ap = 0; ap < static_cast<std::size_t>(AudioParameter::COUNT); ++ap) {
+    for (std::size_t ap = 0; ap < mappings.size(); ++ap) {
         auto& v = mappings[ap];
         v.erase(
             std::remove_if(
                 v.begin(),
                 v.end(),
-                [](const std::unique_ptr<Mapping>& m) {
+                [](const std::shared_ptr<Mapping>& m) {
                     return !m->isMapped();   // expired target?
                 }
             ),

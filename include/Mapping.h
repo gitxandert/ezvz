@@ -45,7 +45,7 @@ const std::string mapTypeNames[] = {
 };
 
 namespace MappingRanges {
-	inline const glm::vec2 inputRanges[] = {
+	const glm::vec2 inputRanges[] = {
 		{ 0.0f, 1.0f } //Envelope
 		, { 0.0f, 1.0f } //ZCR
 	};

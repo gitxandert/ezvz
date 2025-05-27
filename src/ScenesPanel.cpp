@@ -153,12 +153,12 @@ namespace ScenesPanel {
 
                     AudioParameter ap = AudioParameter(MappingsWindow::audioIndex);
                     GraphicParameter gp = GraphicParameter(parameterIndex);
-                    auto newMapping = std::make_unique<SyncMapping>(Canvas::selectedObject, ap, gp, MapType::Sync, isY);
-                    TrackFeatures::selectedTrack->mappings[MappingsWindow::audioIndex].push_back(std::move(newMapping));
+                    auto newMapping = std::make_shared<SyncMapping>(Canvas::selectedObject, ap, gp, MapType::Sync, isY);
+                    TrackFeatures::selectedTrack->mappings[MappingsWindow::audioIndex].push_back(newMapping);
 
                     MappingsWindow::addingMapping = false;
                     mappingIndex = parameterIndex;
-                    MappingsWindow::selectedMapping = TrackFeatures::selectedTrack->mappings[MappingsWindow::audioIndex].back().get();
+                    MappingsWindow::selectedMapping = TrackFeatures::selectedTrack->mappings[MappingsWindow::audioIndex].back();
                 }                
             }
         } else if (showAnimateWindow) {
@@ -425,6 +425,7 @@ namespace ScenesPanel {
                             scene->objects.erase(scene->objects.begin() + selectedIndex);
                             selectedIndex = -1;
                             Canvas::clearSelected();
+							TrackFeatures::selectedTrack->updateMappings();
                             ImGui::PopID();
                             break;
                         }

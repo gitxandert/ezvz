@@ -31,17 +31,17 @@ namespace Canvas {
 	extern GLuint fbo, colorTex, depthRbo;
 	void render();
 
-	inline std::shared_ptr<GraphicObject> selectedObject;
+	extern std::shared_ptr<GraphicObject> selectedObject;
 
 	inline void setSelected(std::shared_ptr<GraphicObject> obj) {
 		selectedObject = obj;
 	}
 
 	inline void clearSelected() {
-		selectedObject = nullptr;
+		selectedObject.reset();
 	}
 
-	inline bool isDraggingObject = false;
+	extern bool isDraggingObject;
 
 	extern bool clicked;
 

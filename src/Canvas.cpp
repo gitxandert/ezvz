@@ -21,7 +21,9 @@ namespace Canvas {
 
     extern float x{}, y{}, w{}, h{};
 
-    extern bool clicked = false;
+	std::shared_ptr<GraphicObject> selectedObject = nullptr;
+	bool isDraggingObject = false;
+    bool clicked = false;
 
     float Canvas::screenW, Canvas::screenH;
 
