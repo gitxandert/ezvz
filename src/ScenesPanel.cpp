@@ -8,6 +8,7 @@
 #include "Scene.h"
 #include "GraphicObject.h"
 #include "Rectangle.h"
+#include "Ellipse.h"
 #include "GlobalTransport.h"
 #include "AnimationInfo.h"
 #include "Mapping.h"
@@ -96,6 +97,9 @@ namespace ScenesPanel {
                     case ObjectType::Rectangle:
                         obj = std::make_shared<RectangleObject>(type, id);
                         break;
+                    case ObjectType::Ellipse:
+                        obj = std::make_shared<EllipseObject>(type, id);
+						break;
                     default: break;
                     }
                     obj->setPosition(Canvas::c_center());

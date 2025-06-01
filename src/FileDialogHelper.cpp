@@ -32,44 +32,24 @@ namespace FileDialogHelper {
                 std::string filePath = ImGuiFileDialog::Instance()->GetFilePathName();
                 lastDirectory = std::filesystem::path(filePath).parent_path().string();
 
-                ma_sound tempSound;
-                ma_result result = ma_sound_init_from_file(
-                    &audioEngine,
-                    filePath.c_str(),
-                    MA_SOUND_FLAG_DECODE,
-                    NULL,
-                    NULL,
-                    &tempSound
-                );
-
-                if (result == MA_SUCCESS) {
-                    float duration = 0.0f;
-                    ma_sound_get_length_in_seconds(&tempSound, &duration);
-                    ma_sound_uninit(&tempSound);
-
-                    TimelineTrack newTrack;
-                    newTrack.filePath = filePath;
-                    newTrack.displayName = std::filesystem::path(filePath).filename().string();
-                    newTrack.startTime = GlobalTransport::currentTime;
-                    newTrack.duration = duration;
-                    newTrack.color = IM_COL32(
+                auto newTrack = std::make_unique<TimelineTrack>();
+                if (newTrack->loadTrack(filePath)) {
+                    newTrack->displayName = std::filesystem::path(filePath).filename().string();
+                    newTrack->startTime = GlobalTransport::currentTime;
+                    newTrack->color = IM_COL32(
                         colorDist(rng),
                         colorDist(rng),
                         colorDist(rng),
                         255
                     );
-                    newTrack.computeComplementaryColor();
-
-                    ma_decoder_config decoderConfig = ma_decoder_config_init(ma_format_f32, 1, 0);
-                    if (ma_decoder_init_file(newTrack.filePath.c_str(), &decoderConfig, &newTrack.analyzerDecoder) == MA_SUCCESS) {
-                        newTrack.decoderInitialized = true;
-                    }
+                    newTrack->computeComplementaryColor();
 
                     Timeline::timelineTracks.push_back(std::move(newTrack));
                 }
                 else {
-                    std::cerr << "Failed to load file for duration check: " << filePath << std::endl;
+                    std::cerr << "Failed to load audio track: " << filePath << std::endl;
                 }
+
             }
             ImGuiFileDialog::Instance()->Close();
         }

@@ -1,6 +1,6 @@
 #include "GraphicObject.h"
 
-GraphicObject::GraphicObject(ObjectType type, std::string& id) : type_(type), id_(id) {}
+GraphicObject::GraphicObject(ObjectType type, const std::string& id) : type_(type), id_(id) {}
 
 const char* GraphicObject::getType() const {
     auto idx = static_cast<std::size_t>(type_);

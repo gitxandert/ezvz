@@ -39,7 +39,7 @@ void TimelineTrack::computeComplementaryColor() {
 float TimelineTrack::getParamValue(AudioParameter param) const {
     switch (param) {
     case AudioParameter::Envelope:
-        return smoothedEnvelope;
+        return currentEnvelope;
     case AudioParameter::ZCR:
         return static_cast<float>(analyzer.getZeroCrossingRate());
 	default:
@@ -62,5 +62,41 @@ void TimelineTrack::updateMappings() {
         );
         for (auto& m : v)
             m->mapParameter(getParamValue(static_cast<AudioParameter>(ap)));
+    }
+}
+
+bool TimelineTrack::loadTrack(const std::string& path) {
+
+    ma_decoder_config decoderConfig = ma_decoder_config_init(ma_format_f32, 2, 48000);
+    if (ma_decoder_init_file(path.c_str(), &decoderConfig, &decoder) != MA_SUCCESS) {
+        return false;
+    }
+    filePath = path;
+    decoderInitialized = true;
+    playing = false;
+    updateDecoderParams();
+
+    ma_uint64 totalFrames = 0;
+    ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrames);
+    duration = float(totalFrames) / sampleRate;
+
+    return true;
+}
+
+void TimelineTrack::playTrack(float timelineTime) {
+    playing = true;
+    nextFrame = uint64_t((timelineTime - startTime) * sampleRate);
+    if (nextFrame < 0) nextFrame = 0;
+    ma_decoder_seek_to_pcm_frame(&decoder, nextFrame);
+}
+
+void TimelineTrack::stopTrack() {
+    playing = false;
+}
+
+void TimelineTrack::unloadTrack() {
+    if (decoderInitialized) {
+        ma_decoder_uninit(&decoder);
+        decoderInitialized = false;
     }
 }

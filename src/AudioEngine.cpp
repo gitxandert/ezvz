@@ -1,4 +1,4 @@
-#include "AudioEngine.h"
+﻿#include "AudioEngine.h"
 #include "TimelineTrack.h"
 #include "GlobalTransport.h"
 #include <cassert>

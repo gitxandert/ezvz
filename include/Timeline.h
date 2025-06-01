@@ -7,7 +7,7 @@
 #include "Scene.h"
 
 namespace Timeline {
-    extern std::vector<TimelineTrack> timelineTracks;
+    extern std::vector<std::unique_ptr<TimelineTrack>> timelineTracks;
     extern std::vector<std::shared_ptr<Scene>> scenes;
 
     extern bool openDialog;

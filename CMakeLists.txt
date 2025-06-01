@@ -10,9 +10,9 @@ add_subdirectory(external/glm)   # provides the target "glm"
 # ─── Source files ───
 set(SOURCES
     src/AnimationInfo.cpp
-    src/AudioEngine.cpp
     src/Canvas.cpp
     src/FileDialogHelper.cpp
+    src/Ellipse.cpp
     src/GlobalTransport.cpp
     src/GraphicObject.cpp
     src/MappingsWindow.cpp

@@ -54,7 +54,7 @@ struct Material {
 // Base class for all graphic objects (Particle, Population, etc.)
 class GraphicObject {
 public:
-    GraphicObject(ObjectType type, std::string& id);
+    GraphicObject(ObjectType type, const std::string& id);
     virtual ~GraphicObject() = default;
 
     // Identification

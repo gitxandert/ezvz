@@ -10,7 +10,6 @@
 #include "ImGuiFileDialogConfig.h"
 #include "ImGuiFileDialog.h"
 
-#include "AudioEngine.h"
 #include "TimelineTrack.h"
 #include "GlobalTransport.h"
 #include "Timeline.h"
@@ -30,6 +29,51 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
     Canvas::recreate(width, height);
 }
+
+void my_audio_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+{
+    float* out = (float*)pOutput;
+    memset(out, 0, frameCount * 2 * sizeof(float)); // Stereo, silence
+
+    for (auto& track : Timeline::timelineTracks) {
+        if (!track->decoderInitialized || !track->playing || track->muted)
+            continue;
+
+        // Seek decoder if needed
+        ma_decoder_seek_to_pcm_frame(&track->decoder, track->nextFrame);
+
+        std::vector<float> tempBuf(frameCount * track->channelCount, 0.0f);
+        ma_uint64 framesRead = 0;
+        ma_decoder_read_pcm_frames(&track->decoder, tempBuf.data(), frameCount, &framesRead);
+
+        // Mix into output buffer (ALWAYS outputting stereo)
+        for (ma_uint64 f = 0; f < framesRead; ++f) {
+            float L = tempBuf[f * track->channelCount + 0];
+            float R = (track->channelCount > 1) ? tempBuf[f * track->channelCount + 1] : L;
+            out[f * 2 + 0] += L;
+            out[f * 2 + 1] += R;
+        }
+
+        // Envelope/RMS calculation
+        float sum = 0.0f;
+        for (ma_uint64 i = 0; i < framesRead * track->channelCount; ++i) {
+            sum += tempBuf[i] * tempBuf[i];
+        }
+        float rms = (framesRead > 0) ? sqrt(sum / (framesRead * track->channelCount)) : 0.0f;
+        track->currentEnvelope.store(rms, std::memory_order_relaxed);
+
+        // Advance playback pointer
+        track->nextFrame += framesRead;
+
+        // End/loop handling (optionally)
+        ma_uint64 totalFrames = 0;
+        ma_decoder_get_length_in_pcm_frames(&track->decoder, &totalFrames);
+        if (track->nextFrame >= totalFrames) {
+            track->playing = false; // or set nextFrame=0 to loop
+        }
+    }
+}
+
 
 int main() {
     // Initialize GLFW
@@ -67,11 +111,6 @@ int main() {
     float screenW = float(mode->width);
     float screenH = float(mode->height);
 
-    // Initialize audio engine
-    if (!initAudio()) {
-        return -1;
-    }
-
     // Setup ImGui context
     IMGUI_CHECKVERSION();
     ImGuiContext* ctx = ImGui::CreateContext();
@@ -85,6 +124,21 @@ int main() {
 
     Canvas::init(screenW, screenH);
     Canvas::shader = std::make_unique<Shader>("vertex.glsl", "fragment.glsl");
+
+    ma_device_config config = ma_device_config_init(ma_device_type_playback);
+    config.playback.format = ma_format_f32;
+    config.playback.channels = 2; // stereo
+    config.sampleRate = 48000;
+    config.dataCallback = my_audio_callback; // <-- your function
+    config.pUserData = nullptr;
+
+    ma_device device;
+    ma_result result = ma_device_init(NULL, &config, &device);
+    if (result != MA_SUCCESS) {
+        std::cerr << "Device was unable to be initialized. Closing program.";
+		return -1;
+    }
+    ma_device_start(&device);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -112,41 +166,6 @@ int main() {
                         scene->resetObjectAnimations();
                 }
             }
-            // Mute selected tracks
-            if (ImGui::IsKeyPressed(ImGuiKey_M)) {
-                for (auto& track : Timeline::timelineTracks) {
-                    if (track.selected) {
-                        track.muted = !track.muted;
-                        updateTrackPlayback(track, GlobalTransport::currentTime);
-                    }
-                }
-            }
-            // Delete selected tracks
-            if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
-                if (!TrackFeatures::showMappings && !Canvas::selectedObject && !ScenesPanel::showAnimateWindow) {
-                    Timeline::timelineTracks.erase(
-                        std::remove_if(
-                            Timeline::timelineTracks.begin(),
-                            Timeline::timelineTracks.end(),
-                            [](TimelineTrack& t) {
-                                if (t.selected) {
-                                    if (t.decoderInitialized) {
-                                        ma_decoder_uninit(&t.analyzerDecoder);
-                                        t.decoderInitialized = false;
-                                    }
-                                    if (t.initialized) {
-                                        ma_sound_uninit(&t.sound);
-                                        t.initialized = false;
-                                    }
-                                    return true;
-                                }
-                                return false;
-                            }
-                        ),
-                        Timeline::timelineTracks.end()
-                    );
-                }
-            }
         }
 
         if (GlobalTransport::isPlaying) {
@@ -162,39 +181,27 @@ int main() {
                     GlobalTransport::isPlaying = false;
                 }
             }
+
+			float currentTime = GlobalTransport::currentTime;
             for (auto& track : Timeline::timelineTracks) {
-                std::cout << "Current time = " << GlobalTransport::currentTime << '\n';
-                updateTrackPlayback(track, GlobalTransport::currentTime);
-                // Audio feature extraction (envelope smoothing, etc.)
-                if (track.decoderInitialized && track.initialized && !track.muted) {
-                    ma_uint64 totalFrames = 0;
-                    ma_decoder_get_length_in_pcm_frames(&track.analyzerDecoder, &totalFrames);
-                    ma_uint64 currentFrame = 0;
-                    ma_sound_get_cursor_in_pcm_frames(&track.sound, &currentFrame);
-                    ma_uint64 frameToRead = (std::min)(currentFrame, totalFrames > 512 ? totalFrames - 512 : 0);
-                    ma_decoder_seek_to_pcm_frame(&track.analyzerDecoder, frameToRead);
-                    std::vector<float> samples(512);
-                    ma_uint64 framesRead = 0;
-                    if (ma_decoder_read_pcm_frames(&track.analyzerDecoder, samples.data(), 512, &framesRead) == MA_SUCCESS && framesRead > 0) {
-                        track.analyzer.analyze(samples.data(), static_cast<size_t>(framesRead), 1);
-                        float rawEnv = track.analyzer.getEnvelope();
-                        track.smoothedEnvelope = track.smoothedEnvelope * (1.0f - track.smoothingAlpha)
-                            + rawEnv * track.smoothingAlpha;
-                    }
+                bool inRegion = (currentTime >= track->startTime) && (currentTime < track->startTime + track->duration);
+
+                if (inRegion && !track->playing) {
+                    track->playTrack(currentTime);
+                }
+                else if (!inRegion && track->playing) {
+                    track->stopTrack();
                 }
 
-                track.updateMappings();
+                track->updateMappings();
             }
         }
-        else if (!Timeline::isScrubberDragging) {
+        else {
             for (auto& track : Timeline::timelineTracks) {
-                if (track.hasPlayed) {
-                    ma_sound_stop(&track.sound);
-                    ma_sound_uninit(&track.sound);
-                    track.hasPlayed = false;
-                    track.initialized = false;
+                if (track->playing) {
+                    track->stopTrack();
                 }
-            }
+			}
         }
 
         int fb_w, fb_h;
@@ -222,17 +229,13 @@ int main() {
 
     // Cleanup tracks and resources
     for (auto& track : Timeline::timelineTracks) {
-        if (track.initialized) {
-            ma_sound_uninit(&track.sound);
-        }
-        if (track.decoderInitialized) {
-            ma_decoder_uninit(&track.analyzerDecoder);
-        }
+        track->unloadTrack();
     }
+
+    ma_device_uninit(&device);
 
     Canvas::shutdown();
 
-    shutdownAudio();
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();

@@ -8,7 +8,7 @@
 
 namespace Timeline {
 
-    std::vector<TimelineTrack> timelineTracks;
+    std::vector<std::unique_ptr<TimelineTrack>> timelineTracks;
     std::vector<std::shared_ptr<Scene>> scenes;
     bool openDialog = false;
     bool isScrubberDragging = false;
@@ -89,7 +89,7 @@ namespace Timeline {
             // Compute dynamic content width
             float maxTimelineExtent = userScreenWidth;
             for (const auto& track : timelineTracks) {
-                float endPx = (track.startTime + track.duration) * 1000.0f * pixelsPerMs;
+                float endPx = (track->startTime + track->duration) * 1000.0f * pixelsPerMs;
                 maxTimelineExtent = (std::max)(maxTimelineExtent, endPx) + 100.0;
             }
 
@@ -244,8 +244,8 @@ namespace Timeline {
 
             for (size_t i = 0; i < timelineTracks.size(); ++i) {
                 auto& track = timelineTracks[i];
-                float rectStartX = track.startTime * 1000.0f * pixelsPerMs;
-                float rectWidth = track.duration * 1000.0f * pixelsPerMs;
+                float rectStartX = track->startTime * 1000.0f * pixelsPerMs;
+                float rectWidth = track->duration * 1000.0f * pixelsPerMs;
 
                 ImVec2 p0(cursorStart.x + rectStartX - scrollX,
                     cursorStart.y + rulerHeight + 5 + i * (trackHeight + 5));
@@ -256,41 +256,41 @@ namespace Timeline {
 
                 if (clicked) {
                     if (ImGui::GetIO().KeyShift) {
-                        track.selected = !track.selected;
+                        track->selected = !track->selected;
                     }
                     else {
-                        for (auto& t : timelineTracks) t.selected = false;
-                        track.selected = true;
+                        for (auto& t : timelineTracks) t->selected = false;
+                        track->selected = true;
                     }
                     anyClicked = true;
                     for (auto& t : timelineTracks) {
-                        if (t.selected) {
-                            t.dragging = true;
-                            t.dragStartMouseX = mousePos.x;
-                            t.dragStartTrackX = t.startTime;
+                        if (t->selected) {
+                            t->dragging = true;
+                            t->dragStartMouseX = mousePos.x;
+                            t->dragStartTrackX = t->startTime;
                         }
                     }
                 }
 
                 if (!ImGui::IsMouseDown(0)) {
-                    track.dragging = false;
+                    track->dragging = false;
                 }
 
-                if (track.dragging && track.selected) {
-                    float deltaX = mousePos.x - track.dragStartMouseX;
+                if (track->dragging && track->selected) {
+                    float deltaX = mousePos.x - track->dragStartMouseX;
                     float deltaTime = deltaX / (1000.0f * pixelsPerMs);
                     for (auto& t : timelineTracks) {
-                        if (t.selected) {
-                            t.startTime = (std::max)(0.0f, t.dragStartTrackX + deltaTime);
+                        if (t->selected) {
+                            t->startTime = (std::max)(0.0f, t->dragStartTrackX + deltaTime);
                         }
                     }
                 }
 
-                ImU32 drawColor = track.color;
-                if (track.muted) {
-                    int a = (track.color >> IM_COL32_A_SHIFT) & 0xFF;
+                ImU32 drawColor = track->color;
+                if (track->muted) {
+                    int a = (track->color >> IM_COL32_A_SHIFT) & 0xFF;
                     a = static_cast<int>(a * 0.3f);
-                    drawColor = (track.color & 0x00FFFFFF) | (a << IM_COL32_A_SHIFT);
+                    drawColor = (track->color & 0x00FFFFFF) | (a << IM_COL32_A_SHIFT);
                 }
                 draw_list->AddRectFilled(p0, p1, drawColor);
 
@@ -304,16 +304,17 @@ namespace Timeline {
                     p0.x + 4,
                     p0.y + (trackHeight - ImGui::GetFontSize()) * 0.5f
                 };
-                draw_list->AddText(textPos, track.labelColor, track.displayName.c_str());
+				std::cout << "Display name: " << track->displayName << std::endl;
+                draw_list->AddText(textPos, track->labelColor, track->displayName.c_str());
                 draw_list->PopClipRect();
 
-                if (track.selected) {
+                if (track->selected) {
                     draw_list->AddRect(p0, p1, IM_COL32(255, 255, 255, 150), 3.0f, 0, 2.5f);
                 }
             }
 
             if (ImGui::IsMouseClicked(0) && !anyClicked && !ImGui::GetIO().WantCaptureMouse) {
-                for (auto& t : timelineTracks) t.selected = false;
+                for (auto& t : timelineTracks) t->selected = false;
             }
 
             // Scrubber

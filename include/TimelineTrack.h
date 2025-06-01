@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <string>
 #include <array>
 #include <vector>
@@ -11,10 +12,18 @@
 #include "imgui.h"
 
 struct TimelineTrack {
+	TimelineTrack() = default;
+
+    TimelineTrack(const TimelineTrack&) = delete;
+    TimelineTrack& operator=(const TimelineTrack&) = delete;
+    TimelineTrack(TimelineTrack&&) = delete;
+    TimelineTrack& operator=(TimelineTrack&&) = delete;
+
     std::string filePath;
     std::string displayName;
     float startTime = 0.0f;
     float duration = 0.0f;
+
     ImU32 color = IM_COL32_WHITE;
     ImU32 labelColor = IM_COL32_WHITE;
     bool selected = false;
@@ -24,11 +33,14 @@ struct TimelineTrack {
     float dragStartTrackX = 0.0f;
 
     bool hasPlayed = false;
-    ma_sound sound{};
     bool initialized = false;
 
-    ma_decoder analyzerDecoder;
+    ma_decoder decoder;
     bool decoderInitialized = false;
+    uint32_t channelCount = 2;
+    uint64_t nextFrame = 0;
+	float sampleRate = 48000.0f; // Default sample rate
+    bool playing = false;
 
     AudioFeatureAnalyzer analyzer;
 
@@ -36,12 +48,24 @@ struct TimelineTrack {
     float smoothingAlpha = 0.1f;
     float smoothNorm = 0.0f;
 
+	std::atomic<float> currentEnvelope{ 0.0f };
+
     float lastLocalTime = 0.0f;
 
 	std::array<std::vector<std::shared_ptr<Mapping>>, static_cast<int>(AudioParameter::COUNT)> mappings;
+    
+    bool loadTrack(const std::string& path);
+    void playTrack(float);
+    void stopTrack();
+    void unloadTrack();
 
     void computeComplementaryColor();
 	float getParamValue(AudioParameter param) const;
 
     void updateMappings();
+
+    void updateDecoderParams() {
+        channelCount = decoder.outputChannels;
+        sampleRate = static_cast<float>(decoder.outputSampleRate);
+    }
 };
