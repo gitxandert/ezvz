@@ -33,8 +33,8 @@ namespace TrackFeatures {
         // Find selected track
         selectedTrack = nullptr;
         for (auto& track : Timeline::timelineTracks) {
-            if (track.selected) {
-                selectedTrack = &track;
+            if (track->selected) {
+                selectedTrack = track.get();
                 break;
             }
         }
@@ -71,7 +71,7 @@ namespace TrackFeatures {
 
             ImGui::Separator();
 
-            float env = selectedTrack->analyzer.getEnvelope();
+            float env = selectedTrack->currentEnvelope.load();
             int zcr = selectedTrack->analyzer.getZeroCrossingRate();
 
             ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -79,12 +79,12 @@ namespace TrackFeatures {
             float lh = ImGui::GetTextLineHeightWithSpacing() + 5;
 
             ImVec2 minPos0 = ImGui::GetCursorScreenPos();
-            ImGui::Text("Envelope: %.4f", selectedTrack->smoothedEnvelope);
+            ImGui::Text("Envelope: %.4f", env);
             if (showMappings && ImGui::IsItemClicked()) {
                 p_index = 0;
             }
 
-            ImGui::ProgressBar(selectedTrack->smoothedEnvelope, ImVec2(-FLT_MIN, 0));
+            ImGui::ProgressBar(env, ImVec2(-FLT_MIN, 0));
 
             ImVec2 minPos1 = ImGui::GetCursorScreenPos();
             float posdiff = minPos1.y - minPos0.y;
