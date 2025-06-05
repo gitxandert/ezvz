@@ -60,18 +60,18 @@ int GraphicObject::animations_size(int i) {
     }
 }
 
-void GraphicObject::add_animation(Animation newAnimation, std::size_t animations_index) {
-    animations_[animations_index].push_back(newAnimation);
+void GraphicObject::add_animation(std::shared_ptr<Animation> newAnimation, std::size_t animations_index) {
+    animations_[animations_index].push_back(std::move(newAnimation));
 }
 
-std::vector<Animation>& GraphicObject::getAnimations(std::size_t index) {
+std::vector<std::shared_ptr<Animation>>& GraphicObject::getAnimations(std::size_t index) {
     return animations_[index];
 }
 
 void GraphicObject::resetAnimations() {
     for (std::size_t i = 0; i < animations_.size(); ++i) {
         for (auto& animation : animations_[i]) {
-            animation.resetAnimation();
+            animation->resetAnimation();
         }
     }
 }
@@ -210,16 +210,16 @@ void GraphicObject::update() {
             case 3: {
                 if ((isNewMapY_ & (1u << parameter)) != 0) {
                     if (animations_[parameter].size() > 0) {
-                        if (!animations_[parameter][0].is_finished()) {
-                            glm::vec2 updateValue = animations_[parameter][0].getValue(GlobalTransport::currentTime * 1000.0f);
+                        if (!animations_[parameter][0]->is_finished()) {
+                            glm::vec2 updateValue = animations_[parameter][0]->getValue(GlobalTransport::currentTime * 1000.0f);
                             transform_.position.x = updateValue.x;
                         }
                     }
                 }
                 else {
                     if (animations_[parameter].size() > 0) {
-                        if (!animations_[parameter][0].is_finished()) {
-                            glm::vec2 updateValue = animations_[parameter][0].getValue(GlobalTransport::currentTime * 1000.0f);
+                        if (!animations_[parameter][0]->is_finished()) {
+                            glm::vec2 updateValue = animations_[parameter][0]->getValue(GlobalTransport::currentTime * 1000.0f);
                             transform_.position.y = updateValue.y;
                         }
                     }
@@ -230,8 +230,10 @@ void GraphicObject::update() {
             }
         }
         else if (animations_[parameter].size() > 0) {
-            if (!animations_[parameter][0].is_finished()) {
-                glm::vec2 updateValue = animations_[parameter][0].getValue(GlobalTransport::currentTime * 1000.0f);
+            if (!animations_[parameter][0]->is_finished()) {
+                glm::vec2 updateValue = animations_[parameter][0]->getValue(GlobalTransport::currentTime * 1000.0f);
+
+                std::cout << "Setting parameter with value (" << updateValue.x << ", " << updateValue.y << ")\n";
                 setParameter(parameter, updateValue);
             }
         }

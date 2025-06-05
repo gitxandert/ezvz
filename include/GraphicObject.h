@@ -80,8 +80,8 @@ public:
 
     // Animations functions
     int animations_size(int i=-1);
-    void add_animation(Animation newAnimation, std::size_t animations_index);
-    std::vector<Animation>& getAnimations(std::size_t index);
+    void add_animation(std::shared_ptr<Animation> newAnimation, std::size_t animations_index);
+    std::vector<std::shared_ptr<Animation>>& getAnimations(std::size_t index);
     void resetAnimations();
 
   
@@ -108,7 +108,8 @@ protected:
     Transform      transform_;
     Material       material_;
 
-    std::array<std::vector<Animation>, static_cast<std::size_t>(GraphicParameter::COUNT)> animations_;
+    std::array<std::vector<std::shared_ptr<Animation>>, static_cast<std::size_t>(GraphicParameter::COUNT)> animations_;
+
     unsigned int mapBools_ = 0;  // mapBools_ is a bitmask, where each bit represents a parameter
     std::array<unsigned int, 3> isMapY_ = { 0 };
     // isMapY_ is an array of bitmasks, where each bit represents if 

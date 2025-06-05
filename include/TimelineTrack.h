@@ -44,11 +44,9 @@ struct TimelineTrack {
 
     AudioFeatureAnalyzer analyzer;
 
-    float smoothedEnvelope = 0.0f;
-    float smoothingAlpha = 0.1f;
-    float smoothNorm = 0.0f;
-
-	std::atomic<float> currentEnvelope{ 0.0f };
+    std::atomic<float> currentEnvelope{ 0.0f };   // raw, per-block value
+    std::atomic<float> smoothedEnvelope{ 0.0f };  // low-pass output
+    float              smoothingAlpha = 0.10f;  // 0 … 1, higher = quicker response
 
     float lastLocalTime = 0.0f;
 

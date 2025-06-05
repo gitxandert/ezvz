@@ -54,13 +54,15 @@ void my_audio_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma
             out[f * 2 + 1] += R;
         }
 
-        // Envelope/RMS calculation
-        float sum = 0.0f;
-        for (ma_uint64 i = 0; i < framesRead * track->channelCount; ++i) {
-            sum += tempBuf[i] * tempBuf[i];
-        }
-        float rms = (framesRead > 0) ? sqrt(sum / (framesRead * track->channelCount)) : 0.0f;
-        track->currentEnvelope.store(rms, std::memory_order_relaxed);
+        // ─── Audio-feature extraction (envelope + ZCR) ──────────────────────
+        track->analyzer.analyze(       /* analyzes this block */
+            tempBuf.data(),        // pointer to interleaved samples
+            framesRead,            // number of *frames* we actually decoded
+            track->channelCount);  // 1 for mono, 2 for stereo
+
+        track->currentEnvelope.store(track->analyzer.getSmoothedEnvelope(),
+            std::memory_order_relaxed);
+
 
         // Advance playback pointer
         track->nextFrame += framesRead;
@@ -162,9 +164,9 @@ int main() {
                     if (Timeline::currentScene)
                         GlobalTransport::currentTime = Timeline::currentScene->startTime / 1000.0f;
                     GlobalTransport::playStartTime = glfwGetTime() - GlobalTransport::currentTime;
-                    for (auto& scene : Timeline::scenes)
-                        scene->resetObjectAnimations();
                 }
+                for (auto& scene : Timeline::scenes)
+                    scene->resetObjectAnimations();
             }
         }
 

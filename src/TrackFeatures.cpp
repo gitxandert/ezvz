@@ -39,18 +39,18 @@ namespace TrackFeatures {
             }
         }
 
+        ImGuiIO& io = ImGui::GetIO();
+        const float timelineFixedHeight = Timeline::timelineFixedHeight;
+
+        // Position the feature panel below the transport bar and above the timeline
+        ImGui::SetNextWindowPos(ImVec2(0, 60), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(
+            ImVec2(panelWidth, io.DisplaySize.y - 60 - timelineFixedHeight),
+            ImGuiCond_Always
+        );
+        ImGui::Begin("Track Features", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+
         if (selectedTrack) {
-            ImGuiIO& io = ImGui::GetIO();
-            const float timelineFixedHeight = Timeline::timelineFixedHeight;
-
-            // Position the feature panel below the transport bar and above the timeline
-            ImGui::SetNextWindowPos(ImVec2(0, 60), ImGuiCond_Always);
-            ImGui::SetNextWindowSize(
-                ImVec2(panelWidth, io.DisplaySize.y - 60 - timelineFixedHeight),
-                ImGuiCond_Always
-            );
-            ImGui::Begin("Track Features", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
-
             const char* name = selectedTrack->displayName.c_str();
             bool trunc = selectedTrack->displayName.size() > 7;
             ImGui::Text("Track: %.*s%s",
@@ -71,7 +71,8 @@ namespace TrackFeatures {
 
             ImGui::Separator();
 
-            float env = selectedTrack->currentEnvelope.load();
+            float env = selectedTrack->analyzer.getSmoothedEnvelope();
+            float alpha = selectedTrack->analyzer.getSmoothingAlpha(selectedTrack->sampleRate);
             int zcr = selectedTrack->analyzer.getZeroCrossingRate();
 
             ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -101,37 +102,38 @@ namespace TrackFeatures {
                 p_index = 0;
             }
 
-            ImGui::SliderFloat(
+            if (ImGui::SliderFloat(
                 "Smoothness",
-                &selectedTrack->smoothNorm,
+                &alpha,
                 0.0f,
                 1.0f,
-                "%.2f"
-            );
+                "%.3f"
+            )) {
+                selectedTrack->analyzer.setSmoothingAlpha(alpha, selectedTrack->sampleRate);
+            }
 
             ImGui::Separator();
 
-			ImVec2 minPos2 = ImGui::GetCursorScreenPos();
+            ImVec2 minPos2 = ImGui::GetCursorScreenPos();
             if (showMappings && p_index == 1) {
                 dl->AddRectFilled(
                     minPos2,
                     { minPos2.x + avail, minPos2.y + lh },
                     IM_COL32(255, 127, 0, 100)
-				);
+                );
             }
             ImGui::Text("ZCR: %d", zcr);
-            if(showMappings && ImGui::IsItemClicked()) {
+            if (showMappings && ImGui::IsItemClicked()) {
                 p_index = 1;
-			}
-
-            float t = selectedTrack->smoothNorm;
-            // Recalculate smoothing alpha based on norm
-            selectedTrack->smoothingAlpha = 0.5f * powf(0.01f / 0.5f, t);
-
-            ImGui::End();
+            }
 
             if (showMappings)
                 MappingsWindow::showMappingsWindow(selectedTrack, parameters[p_index], p_index);
         }
+        else {
+			ImGui::Text("No track selected.");
+        }
+
+        ImGui::End();
     }
 }

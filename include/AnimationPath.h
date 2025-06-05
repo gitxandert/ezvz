@@ -68,9 +68,7 @@ inline glm::vec2 AnimationPath::updateValue(float t) {
 	case PathType::DashedLine:
 		return start_;
 	case PathType::SolidLine:
-		std::cout << "Easing value...\n";
 		glm::vec2 eased = start_ + distance_ * easingFunction(t);
-		std::cout << "Returning interpolated value: (" << eased.x << ", " << eased.y << ")\n";
 		return start_ + distance_ * easingFunction(t);
 	default:
 		return start_;

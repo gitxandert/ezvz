@@ -200,6 +200,10 @@ namespace Timeline {
                 }
             }
 
+            if(!currentScene) {
+                currentScene = scenes.empty() ? nullptr : scenes.back();
+			}
+
             if (isDraggingScene) {
                 float sx = x0 + tempSceneStart * pixelsPerMs - scrollX;
                 float ex = x0 + tempSceneEnd * pixelsPerMs - scrollX;
@@ -304,7 +308,6 @@ namespace Timeline {
                     p0.x + 4,
                     p0.y + (trackHeight - ImGui::GetFontSize()) * 0.5f
                 };
-				std::cout << "Display name: " << track->displayName << std::endl;
                 draw_list->AddText(textPos, track->labelColor, track->displayName.c_str());
                 draw_list->PopClipRect();
 
@@ -354,6 +357,10 @@ namespace Timeline {
                 if (curTimeInMs < scenes[i]->endTime && curTimeInMs >= scenes[i]->startTime) {
                     currentScene = scenes[i];
                 }
+            }
+
+            if (!currentScene) {
+                currentScene = scenes.empty() ? nullptr : scenes.back();
             }
         }
     }

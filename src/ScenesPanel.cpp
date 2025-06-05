@@ -112,7 +112,7 @@ namespace ScenesPanel {
     }
 
     void hoverFunc(ImDrawList* dl, ImVec2 pos, float avail, float lh, int parameterIndex) {
-        if (MappingsWindow::addingMapping && !MappingsWindow::isTrigger) {
+        if (MappingsWindow::addingMapping) {
             if (ImGui::IsItemHovered()) {
 
                 ImGuiIO& io = ImGui::GetIO();
@@ -124,46 +124,64 @@ namespace ScenesPanel {
                 if (mousePos.x > pos.x + avail * 0.65f / 2.0f)
                     isY = true;
 
-                if (parameterIndex == 0 || parameterIndex == 2 || parameterIndex == 3) {
-                    avail *= 0.65f / 2.0f;
+                if (!MappingsWindow::isTrigger) {
+                    if (parameterIndex == 0 || parameterIndex == 2 || parameterIndex == 3) {
+                        avail *= 0.65f / 2.0f;
 
-					if (!Canvas::selectedObject->isMapped(parameterIndex)) {
+                        if (Canvas::selectedObject && !Canvas::selectedObject->isMapped(parameterIndex)) {
+                            dl->AddRectFilled(
+                                paramPos,
+                                { paramPos.x + avail, paramPos.y + lh },
+                                IM_COL32(255, 127, 0, 100)
+                            );
+                        }
+
+                        if (isY)
+                            pos.x += avail;
+
                         dl->AddRectFilled(
-                            paramPos,
-                            { paramPos.x + avail, paramPos.y + lh },
+                            pos,
+                            { pos.x + avail, pos.y + lh },
+                            IM_COL32(255, 127, 0, 100)
+                        );
+                    }
+                    else if (Canvas::selectedObject && !Canvas::selectedObject->isMapped(parameterIndex)) {
+                        dl->AddRectFilled(
+                            pos,
+                            { pos.x + avail, pos.y + lh },
                             IM_COL32(255, 127, 0, 100)
                         );
                     }
 
-                    if (isY)
-                        pos.x += avail;
+                    if (ImGui::IsItemClicked()) {
+                        Canvas::selectedObject->setMapped(parameterIndex, isY);
 
-                    dl->AddRectFilled(
-                        pos,
-                        { pos.x + avail, pos.y + lh },
-                        IM_COL32(255, 127, 0, 100)
-                    );
+                        AudioParameter ap = AudioParameter(MappingsWindow::audioIndex);
+                        GraphicParameter gp = GraphicParameter(parameterIndex);
+                        auto newMapping = std::make_shared<SyncMapping>(Canvas::selectedObject, ap, gp, MapType::Sync, isY);
+                        TrackFeatures::selectedTrack->mappings[MappingsWindow::audioIndex].push_back(newMapping);
+
+                        MappingsWindow::addingMapping = false;
+                        mappingIndex = parameterIndex;
+                        MappingsWindow::selectedMapping = TrackFeatures::selectedTrack->mappings[MappingsWindow::audioIndex].back();
+                    }
                 }
-                else if (!Canvas::selectedObject->isMapped(parameterIndex)) {
-                    dl->AddRectFilled(
-                        pos,
-                        { pos.x + avail, pos.y + lh },
-                        IM_COL32(255, 127, 0, 100)
-					);
+                else
+                {
+                    if (ImGui::IsItemHovered()) {
+                        dl->AddRectFilled(
+                            pos,
+                            { pos.x + avail, pos.y + lh },
+                            IM_COL32(255, 255, 0, 100)
+                        );
+
+                        if (ImGui::IsItemClicked()) {
+                            animPropIndex = parameterIndex;
+                            AnimationInfo::settingTrigger = true;
+                            showAnimateWindow = true;
+                        }
+                    }
                 }
-
-                if (ImGui::IsItemClicked()) {
-                    Canvas::selectedObject->setMapped(parameterIndex, isY);
-
-                    AudioParameter ap = AudioParameter(MappingsWindow::audioIndex);
-                    GraphicParameter gp = GraphicParameter(parameterIndex);
-                    auto newMapping = std::make_shared<SyncMapping>(Canvas::selectedObject, ap, gp, MapType::Sync, isY);
-                    TrackFeatures::selectedTrack->mappings[MappingsWindow::audioIndex].push_back(newMapping);
-
-                    MappingsWindow::addingMapping = false;
-                    mappingIndex = parameterIndex;
-                    MappingsWindow::selectedMapping = TrackFeatures::selectedTrack->mappings[MappingsWindow::audioIndex].back();
-                }                
             }
         } else if (showAnimateWindow) {
             if (ImGui::IsItemHovered()) {
@@ -190,7 +208,7 @@ namespace ScenesPanel {
 
         if (TrackFeatures::showMappings) {
             for (std::size_t i = 0; i < 6; ++i) {
-                if (Canvas::selectedObject->isMapped(i)) {
+                if (Canvas::selectedObject && Canvas::selectedObject->isMapped(i)) {
                     ImVec2 pos = minPos[i];
                     ImVec2 paramPos = { pos.x + avail * 2.0f / 3.0f, pos.y };
 					float portion = avail;
@@ -218,7 +236,7 @@ namespace ScenesPanel {
 						case 3: yIndex = 2; break;
                         }
                         
-                        switch (Canvas::selectedObject->isMappedY(yIndex)) {
+                        switch (Canvas::selectedObject && Canvas::selectedObject->isMappedY(yIndex)) {
                         case 1: {
                             dl->AddRectFilled(
                                 pos,
@@ -333,6 +351,7 @@ namespace ScenesPanel {
                 ImVec2(availW, 0)))
             {
                 activeScene = i;
+                Canvas::clearSelected();
                 GlobalTransport::currentTime = Timeline::scenes[i]->startTime / 1000.0f;
                 Timeline::currentScene = Timeline::scenes[i];
                 showAnimateWindow = false;
@@ -351,9 +370,12 @@ namespace ScenesPanel {
             ImGui::TextUnformatted("Objects");
             ImGui::Separator();
 
+
             if (ImGui::Button("Add Object")) {
                 ImGui::OpenPopup("AddObjectPopup");
             }
+
+            renderAddObjectPopup();
 
             if (!TrackFeatures::showMappings) {
                 ImGui::SameLine();
@@ -372,8 +394,6 @@ namespace ScenesPanel {
                 }
             }
 
-            renderAddObjectPopup();
-            
             ImGui::Columns(1);
             ImGui::Separator();
 
@@ -404,8 +424,7 @@ namespace ScenesPanel {
                 else {
                     // --- Normal selectable mode ---
                     if (ImGui::Selectable(obj->getId().c_str(), selectedIndex == (int)i)) {
-                        hasSelectedObject = !hasSelectedObject;
-                        if (hasSelectedObject) {
+                        if (selectedIndex != (int)i) {
                             selectedIndex = (int)i;
                             Canvas::setSelected(obj);
                             showAnimateWindow = false;
@@ -523,7 +542,6 @@ namespace ScenesPanel {
 
         if (showAnimateWindow) {
             AnimationInfo::showAnimationInfo(parameters[animPropIndex], animPropIndex);
-            AnimationInfo::showAnimationWindow();
         }
 	}
 }

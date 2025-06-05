@@ -139,6 +139,9 @@ public:
 	const bool& getGParamY() const { return g_param_y_; }
 	const AudioParameter& getAudioParameter() const { return a_param_; }
 	const GraphicParameter& getGraphicParameter() const { return g_param_; }
+	std::shared_ptr<GraphicObject> getMappedObject() const {
+		return mapped_object.lock();
+	}
 
 	bool isMapped() const { return !mapped_object.expired(); }
 
@@ -217,7 +220,6 @@ public:
 		float max_input_ = std::max(map_input_.x, map_input_.y);
 		if (value >= min_input_ && value <= max_input_) {
 			float converted_value = convertValue(value);
-			std::cout << "Converted Value: " << converted_value << std::endl;
 			updateMappedObject(converted_value);
 		}
 	}
@@ -237,9 +239,56 @@ public:
 		: Mapping(obj, ap, gp, mp)
 		, animation_index_(animation_index)
 	{
+		input_range_ = MappingRanges::inputRanges[static_cast<int>(ap)];
+		threshold_ = input_range_.x;
+	}
+
+	void mapParameter(float value) override {
+		bool shouldTrigger = false;
+		if (isGreaterThan_) {
+			if (value >= threshold_)
+				shouldTrigger = true;
+		}
+		else {
+			if (value <= threshold_)
+				shouldTrigger = true;
+		}
+
+		if (shouldTrigger) {
+			if (!hasReachedThreshold_) {
+				hasReachedThreshold_ = true;
+				if (auto obj = getMappedObject()) {
+					obj->getAnimations(static_cast<std::size_t>(getGraphicParameter()))[animation_index_]->trigger();
+				}
+			}
+		}
+		else {
+			hasReachedThreshold_ = false;
+		}
+	};
+
+	void showMappingParametersUI() override
+	{
+		ImGui::Indent(10.0f);
+		ImGui::Text("Threshold");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(100.0f);
+		ImGui::DragFloat("##Threshold", &threshold_, input_drag_speed_, input_range_.y / 1000.0f, input_range_.y);
+
+		ImGui::SameLine();
+		const char* greater_than_label = isGreaterThan_ ? ">" : "<";
+		if(ImGui::Button(greater_than_label)) {
+			isGreaterThan_ = !isGreaterThan_;
+		}
+		ImGui::Unindent(10.0f);
 	}
 
 private:
 	std::size_t animation_index_ = 0;
+	glm::vec2 input_range_{};
+	float input_drag_speed_ = 0.01f;
 	float threshold_ = 0.0f;
+	bool isGreaterThan_ = true;
+	bool hasReachedThreshold_ = false;
+
 };

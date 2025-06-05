@@ -1,5 +1,4 @@
 #include "FileDialogHelper.h"
-#include "AudioEngine.h"
 #include "GlobalTransport.h"
 #include "Timeline.h"
 #include "TimelineTrack.h"
