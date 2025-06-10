@@ -30,6 +30,12 @@ namespace Timeline {
 
     std::shared_ptr<Scene> currentScene;
 
+    static constexpr float rulerHeight = 20.0f;
+    static constexpr float rulerMarginTop = 5.0f;
+
+    // Ruler ticks:
+    static constexpr float tickSpacingSeconds = 1.0f;
+
     static ImU32 randomColor() {
         auto rnd = []() { return 50 + (std::rand() % 156); };
         return IM_COL32(rnd(), rnd(), rnd(), 150);
@@ -45,8 +51,8 @@ namespace Timeline {
     void render(float currentTime) {
         if (!ScenesPanel::showAnimateWindow && !TrackFeatures::showMappings) {
             ImGuiIO& io = ImGui::GetIO();
-            ImGui::SetNextWindowPos(ImVec2(0, io.DisplaySize.y - timelineFixedHeight), ImGuiCond_Always);
-            ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, timelineFixedHeight), ImGuiCond_Always);
+            ImGui::SetNextWindowPos(ImVec2(0, io.DisplaySize.y - timelineFixedHeight + 5), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, timelineFixedHeight - 5), ImGuiCond_Always);
             ImGui::Begin("Timeline", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 
             ImGui::SetNextItemWidth(io.DisplaySize.x * 0.7f);
@@ -110,12 +116,10 @@ namespace Timeline {
             ImVec2 cursorStart = ImGui::GetCursorScreenPos();
             ImVec2 mousePos = ImGui::GetMousePos();
             bool anyClicked = false;
-            ImGui::Dummy(ImVec2(maxTimelineExtent, timelineTracks.size() * (trackHeight + 5)));
+            ImGui::Dummy(ImVec2(maxTimelineExtent, rulerHeight + timelineTracks.size() * (trackHeight + 5)));
             ImGui::SetCursorScreenPos(cursorStart);
             float scrollX = ImGui::GetScrollX();
 
-            float rulerHeight = 20.0f;
-            float tickSpacingSeconds = 1.0f;
             float tickSpacingPixels = tickSpacingSeconds * 1000.0f * pixelsPerMs;
             float timelineStart = cursorStart.x;
             float timelineTop = cursorStart.y;

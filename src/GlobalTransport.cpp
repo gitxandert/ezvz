@@ -2,9 +2,12 @@
 #include "Timeline.h"
 #include "Scene.h"
 #include "imgui.h"
+#include "Menu.h"
 #include <iostream>
 
 namespace GlobalTransport {
+    float transportHeight = 80.0f;
+
     bool isPlaying = false;
     bool isLooping = false;
     float currentTime = 0.0f;
@@ -23,8 +26,10 @@ namespace GlobalTransport {
     float render() {
         ImGuiIO& io = ImGui::GetIO();
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-        ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, 60), ImGuiCond_Always);
-        ImGui::Begin("Global Transport", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
+        ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, transportHeight), ImGuiCond_Always);
+        ImGui::Begin("Global Transport", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
+
+        menuBar();
 
         float centerX = io.DisplaySize.x * 0.3f;
         float contentWidth = 500.0f;

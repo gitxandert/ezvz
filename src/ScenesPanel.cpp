@@ -236,7 +236,7 @@ namespace ScenesPanel {
 						case 3: yIndex = 2; break;
                         }
                         
-                        switch (Canvas::selectedObject && Canvas::selectedObject->isMappedY(yIndex)) {
+                        switch (Canvas::selectedObject->isMappedY(yIndex)) {
                         case 1: {
                             dl->AddRectFilled(
                                 pos,
@@ -321,9 +321,9 @@ namespace ScenesPanel {
         ImGuiIO& io = ImGui::GetIO();
 
         float displayX = io.DisplaySize.x;
-        float panelY = io.DisplaySize.y - 60 - Timeline::timelineFixedHeight;
+        float panelY = io.DisplaySize.y - GlobalTransport::transportHeight - Timeline::timelineFixedHeight - 5;
 
-        ImGui::SetNextWindowPos(ImVec2(displayX - panelWidth, 60), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(displayX - panelWidth, GlobalTransport::transportHeight + 5), ImGuiCond_Always);
         ImGui::SetNextWindowSize(
             ImVec2(panelWidth, panelY),
             ImGuiCond_Always
@@ -378,10 +378,10 @@ namespace ScenesPanel {
             renderAddObjectPopup();
 
             if (!TrackFeatures::showMappings) {
-                ImGui::SameLine();
 
                 const char* animateBtnLabel = showAnimateWindow ? "Hide Animations" : "View Animations";
                 if (Canvas::selectedObject) {
+                    ImGui::SameLine();
                     if (ImGui::Button(animateBtnLabel)) {
                         showAnimateWindow = !showAnimateWindow;
                         if (showAnimateWindow) {
@@ -531,6 +531,8 @@ namespace ScenesPanel {
                     ImGui::Unindent(10.0f);
                 }
 
+                ImGui::Separator();
+
                 ImGui::PopID();
             }
         }
@@ -542,6 +544,9 @@ namespace ScenesPanel {
 
         if (showAnimateWindow) {
             AnimationInfo::showAnimationInfo(parameters[animPropIndex], animPropIndex);
+        }
+        else {
+			AnimationInfo::resetAnimationWindow();
         }
 	}
 }

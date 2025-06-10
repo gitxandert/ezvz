@@ -3,6 +3,7 @@
 #include "imgui.h"
 
 namespace GlobalTransport {
+    extern float transportHeight;
     extern bool isPlaying;
     extern bool isLooping;
     extern float currentTime;

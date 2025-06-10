@@ -57,43 +57,29 @@ namespace Canvas {
     }
 
     bool hitTestOBB(
-        const Transform& T,             // position/rotation/scale
-        const glm::vec3& fullSize,      // getSize()
-        const glm::vec2& clickPos      // local = MousePos – canvasOrigin
+        const Transform& T,         // position/rotation
+        const glm::vec2& fullSize,  // width,height in world units
+        const glm::vec2& click      // world click from above
     ) {
+        // half-extents in world units
+        glm::vec2 half = fullSize * 0.5f;
 
-        // 1) half‐extents in object units
-        glm::vec3 half = fullSize * 0.5f;
-
-        // 2) build the model matrix (Z‐axis rotation)
+        // 1) translate → rotate only
         glm::mat4 M = glm::translate(glm::mat4(1.0f),
-            glm::vec3(T.position.x,
-                T.position.y,
-                0.0f))
+            glm::vec3(T.position.x, T.position.y, 0))
             * glm::rotate(glm::mat4(1.0f),
-                glm::radians(-T.rotation.z),
-                glm::vec3(0, 0, 1))
-            * glm::scale(glm::mat4(1.0f),
-                glm::vec3(fullSize.x,
-                    fullSize.y,
-                    1.0f));
+                glm::radians(T.rotation.z),
+                glm::vec3(0, 0, 1));
 
-        // 3) invert it
+        // 2) invert and transform
         glm::mat4 invM = glm::inverse(M);
+        glm::vec4 p = invM * glm::vec4(click.x, click.y, 0.0f, 1.0f);
 
-        // 4) transform click into object‐local
-        glm::vec4 localPt = invM * glm::vec4(clickPos.x, clickPos.y, 0.0f, 1.0f);
-
-        // 5) axis‐aligned bounding‐box check
-        bool hit2D =
-            std::abs(localPt.x) <= half.x &&
-            std::abs(localPt.y) <= half.y;
-        // if you cared about Z (e.g. 3D picking), do:
-        // bool hit3D = std::abs(localPt.z) <= half.z;
-        // return hit2D && hit3D;
-
-        return hit2D;
+        // 3) AABB test in local space
+        return std::abs(p.x) <= half.x
+            && std::abs(p.y) <= half.y;
     }
+
 
     void init(int w, int h)
     {
@@ -369,21 +355,15 @@ namespace Canvas {
 
         ImGuiIO& io = ImGui::GetIO();
 
-        // 1) Compute and reserve your Canvas window
-        const float topBarHeight = 60.0f;
-        const float timelineHeight = Timeline::timelineFixedHeight;
-        const float scenesPanelWidth = ScenesPanel::panelWidth;
-        const float featuresPanelWidth = TrackFeatures::panelWidth;
-
-        x = padding + featuresPanelWidth;
-        y = topBarHeight + padding;
+        x = padding + TrackFeatures::panelWidth;
+        y = GlobalTransport::transportHeight + padding;
         w = io.DisplaySize.x
-            - scenesPanelWidth
-            - featuresPanelWidth
+            - ScenesPanel::panelWidth
+            - TrackFeatures::panelWidth
             - 2 * padding;
         h = io.DisplaySize.y
-            - topBarHeight
-            - timelineHeight
+            - GlobalTransport::transportHeight
+            - Timeline::timelineFixedHeight
             - 2 * padding;
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -549,12 +529,11 @@ namespace Canvas {
                     world
                 );
                 if (!over) {
-                    std::cout << "Missed!\n";
                     isDraggingObject = false;
                     Canvas::clearSelected();
                 }
                 else {
-                    std::cout << "Hit object\n";
+                    std::cout << "Hit object at (" << world.x << ", " << world.y << ")\n";
                     isDraggingObject = true;
                     dragOffset = glm::vec2(T.position.x, T.position.y) - world;
                 }

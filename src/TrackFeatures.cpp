@@ -40,12 +40,11 @@ namespace TrackFeatures {
         }
 
         ImGuiIO& io = ImGui::GetIO();
-        const float timelineFixedHeight = Timeline::timelineFixedHeight;
 
         // Position the feature panel below the transport bar and above the timeline
-        ImGui::SetNextWindowPos(ImVec2(0, 60), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(0, GlobalTransport::transportHeight + 5), ImGuiCond_Always);
         ImGui::SetNextWindowSize(
-            ImVec2(panelWidth, io.DisplaySize.y - 60 - timelineFixedHeight),
+            ImVec2(panelWidth, io.DisplaySize.y - GlobalTransport::transportHeight - Timeline::timelineFixedHeight - 5),
             ImGuiCond_Always
         );
         ImGui::Begin("Track Features", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);

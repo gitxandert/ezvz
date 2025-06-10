@@ -19,10 +19,12 @@
 #include "Canvas.h"
 #include "Shader.h"
 #include "MappingsWindow.h"
+#include "Style.h"
 
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <filesystem>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -76,6 +78,13 @@ void my_audio_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma
     }
 }
 
+std::filesystem::path getProjectRelativePath(const std::string& relativePathFromRoot) {
+    std::filesystem::path base = std::filesystem::current_path();
+    for (int i = 0; i < 3; ++i)
+        base = base.parent_path();
+
+    return base / relativePathFromRoot;
+}
 
 int main() {
     // Initialize GLFW
@@ -117,7 +126,19 @@ int main() {
     IMGUI_CHECKVERSION();
     ImGuiContext* ctx = ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    ImGui::StyleColorsDark();
+
+    setStyle();
+
+    std::filesystem::path fontPath = getProjectRelativePath("assets/fonts/RobotoMono.ttf");
+    if (!std::filesystem::exists(fontPath)) {
+        std::cerr << "Font not found at: " << fontPath << "\n";
+    }
+    else {
+        io.Fonts->AddFontFromFileTTF(fontPath.string().c_str(), 16.0f);
+    }
+
+    io.FontDefault = io.Fonts->Fonts.back();
+
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
@@ -210,7 +231,7 @@ int main() {
         glfwGetFramebufferSize(window, &fb_w, &fb_h);
         glViewport(0, 0, fb_w, fb_h);
         glDisable(GL_SCISSOR_TEST);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(CLEAR_COL.x, CLEAR_COL.y, CLEAR_COL.z, CLEAR_COL.w);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Render UI windows

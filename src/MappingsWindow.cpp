@@ -41,9 +41,10 @@ namespace MappingsWindow {
 		ImGuiIO& io = ImGui::GetIO();
 
 		float scale = (isTrigger && ScenesPanel::showAnimateWindow) ? 0.5f : 1.0f;
+		float space = (isTrigger && ScenesPanel::showAnimateWindow) ? 5.0f : 0.0f;
 
-		ImGui::SetNextWindowPos(ImVec2(0, io.DisplaySize.y - Timeline::timelineFixedHeight), ImGuiCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x * scale, Timeline::timelineFixedHeight), ImGuiCond_Always);
+		ImGui::SetNextWindowPos(ImVec2(0, io.DisplaySize.y - Timeline::timelineFixedHeight + 5), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x * scale - space, Timeline::timelineFixedHeight - 5), ImGuiCond_Always);
 		ImGui::SetNextWindowBgAlpha(1.0f);
 		ImGui::Begin((parameter + " Mappings").c_str(), nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 
@@ -71,7 +72,7 @@ namespace MappingsWindow {
 			std::vector<std::shared_ptr<Mapping>>& cur_mappings = selectedTrack->mappings[p_index];
 			for (std::size_t i = 0; i < cur_mappings.size(); ++i) {
 				ImGui::SameLine();
-				bool is_selected = (i == ScenesPanel::mappingIndex);
+				bool is_selected = (i == selectedMappingIndex);
 				std::string label = "Mapping " + std::to_string(i + 1);
 				if (ImGui::Selectable(label.c_str(), is_selected, 0, {100, 0})) {
 					isMappingSelected = true;
