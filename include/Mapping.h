@@ -258,6 +258,7 @@ public:
 			if (!hasReachedThreshold_) {
 				hasReachedThreshold_ = true;
 				if (auto obj = getMappedObject()) {
+					std::cout << "animation_index_ = " << animation_index_ << '\n';
 					obj->getAnimations(static_cast<std::size_t>(getGraphicParameter()))[animation_index_]->trigger();
 				}
 			}

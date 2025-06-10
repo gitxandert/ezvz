@@ -69,7 +69,7 @@ std::vector<std::shared_ptr<Animation>>& GraphicObject::getAnimations(std::size_
 }
 
 void GraphicObject::resetAnimations() {
-    for (std::size_t i = 0; i < animations_.size(); ++i) {
+    for (std::size_t i = 0; i < animations_size(); ++i) {
         for (auto& animation : animations_[i]) {
             animation->resetAnimation();
         }
@@ -202,6 +202,7 @@ void GraphicObject::setNewMapBools(int paramIndex, bool isY) {
 }
 
 void GraphicObject::update() {
+    std::cout << "Updating graphic object\n";
     for (int parameter = 0; parameter < animations_.size(); ++parameter) {
         if ((newMapBools_ & (1u << parameter)) != 0) {
             switch (parameter) {
@@ -230,7 +231,9 @@ void GraphicObject::update() {
             }
         }
         else if (animations_[parameter].size() > 0) {
+            std::cout << "Animations ahoy\n";
             if (!animations_[parameter][0]->is_finished()) {
+                std::cout << "Updating animation value\n";
                 glm::vec2 updateValue = animations_[parameter][0]->getValue(GlobalTransport::currentTime * 1000.0f);
 
                 std::cout << "Setting parameter with value (" << updateValue.x << ", " << updateValue.y << ")\n";

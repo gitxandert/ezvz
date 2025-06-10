@@ -23,6 +23,11 @@ namespace GlobalTransport {
         loopEnd = loopScene->endTime / 1000.0f;
     }
 
+    void resetLoop() {
+        isLooping = false;
+        loopScene = nullptr;
+    }
+
     float render() {
         ImGuiIO& io = ImGui::GetIO();
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);

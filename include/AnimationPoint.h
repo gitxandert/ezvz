@@ -1,11 +1,25 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <random>
 #include <glm/glm.hpp>
 #include "Animation.h"
 #include "AnimationPath.h"
 #include "GlobalTransport.h"
 #include <iostream>
+
+enum class LoopType
+{
+    Off,
+    Sequence,
+    Random,
+    COUNT
+};
+
+inline std::mt19937& get_rng() {
+    static std::mt19937 rng{ std::random_device{}() };
+    return rng;
+};
 
 class AnimationPoint
 {
@@ -34,13 +48,19 @@ public:
     float getDuration();
     void setDuration(float dur);
 
+	void setLoopType(LoopType loop) { loopType_ = loop; }
+	LoopType getLoopType() const { return loopType_; }
+
+    void updatePathIndex();
+
 private:
     glm::vec2 value_;
     float duration_;
 
+	LoopType loopType_ = LoopType::Off; // Default to no looping
+
     std::vector<std::shared_ptr<AnimationPath>> paths_;
     std::size_t path_index_ = 0;
-    std::vector<std::size_t> defined_sequence_;
 
     std::vector<std::weak_ptr<AnimationPath>> associatedPaths_;  // weak pointers
 };
@@ -89,4 +109,25 @@ inline float AnimationPoint::getDuration() {
 
 inline void AnimationPoint::setDuration(float dur) {
     duration_ = dur;
+}
+
+inline void AnimationPoint::updatePathIndex() {
+    std::cout << "Updating path index\n";
+
+    switch (loopType_) {
+    case LoopType::Sequence: {
+        if (path_index_ < paths_.size() - 1)
+            ++path_index_;
+        else
+			path_index_ = 0; // Loop back to the start
+        break;
+    }
+    case LoopType::Random: {
+        std::uniform_int_distribution<int> dist(0, paths_.size() - 1); 
+        int random_index = dist(get_rng());
+        path_index_ = (std::size_t)(random_index);
+        break;
+    }
+    default: break;
+    }
 }

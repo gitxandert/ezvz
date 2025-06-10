@@ -42,6 +42,7 @@ namespace AnimationInfo {
 		clickedPoint = -1;
 		pointHovered = false;
 		settingTrigger = false;
+		GlobalTransport::resetLoop();
 	}
 
 	glm::vec2 normalizeClick(glm::vec2 clickWorld, int p_i) {
@@ -258,13 +259,13 @@ namespace AnimationInfo {
 
 		switch (parameterIndex) {
 		case 0: { // Position X/Y
-			ImGui::Text("x:"); ImGui::SameLine();
+			ImGui::Text("   x:  "); ImGui::SameLine();
 			ImGui::SetNextItemWidth(80.0f);
 			if (ImGui::InputFloat("##PositionX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
 				paths[pathsIndex]->setEnd(p_val);
 			}
 
-			ImGui::Text("y:"); ImGui::SameLine();
+			ImGui::Text("   y:  "); ImGui::SameLine();
 			ImGui::SetNextItemWidth(80.0f);
 			if (ImGui::InputFloat("##PositionY", &p_val.y, 0.0f, 0.0f, "%.3f")) {
 				paths[pathsIndex]->setEnd(p_val);
@@ -272,7 +273,7 @@ namespace AnimationInfo {
 			break;
 		}
 		case 1: { // Rotation Z
-			ImGui::Text("rot:"); ImGui::SameLine();
+			ImGui::Text("  rot: "); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##RotZ", &p_val.x, 0.0f, 0.0f, "%.3f")) {
 				paths[pathsIndex]->setEnd(p_val);
@@ -280,13 +281,13 @@ namespace AnimationInfo {
 			break;
 		}
 		case 2: { // Size W/H
-			ImGui::Text("w:"); ImGui::SameLine();
+			ImGui::Text("   w:  "); ImGui::SameLine();
 			ImGui::SetNextItemWidth(80.0f);
 			if (ImGui::InputFloat("##SizeW", &p_val.x, 0.0f, 0.0f, "%.3f")) {
 				paths[pathsIndex]->setEnd(p_val);
 			}
 
-			ImGui::Text("h:"); ImGui::SameLine();
+			ImGui::Text("   h:  "); ImGui::SameLine();
 			ImGui::SetNextItemWidth(80.0f);
 			if (ImGui::InputFloat("##SizeH", &p_val.y, 0.0f, 0.0f, "%.3f")) {
 				paths[pathsIndex]->setEnd(p_val);
@@ -294,13 +295,13 @@ namespace AnimationInfo {
 			break;
 		}
 		case 3: { // Hue / Saturation
-			ImGui::Text("hue:"); ImGui::SameLine();
+			ImGui::Text("  hue: "); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##HueX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
 				paths[pathsIndex]->setEnd(p_val);
 			}
 
-			ImGui::Text("sat.:"); ImGui::SameLine();
+			ImGui::Text(" sat.: "); ImGui::SameLine();
 			ImGui::SetNextItemWidth(59.0f);
 			if (ImGui::InputFloat("##SaturationY", &p_val.y, 0.0f, 0.0f, "%.3f")) {
 				paths[pathsIndex]->setEnd(p_val);
@@ -308,7 +309,7 @@ namespace AnimationInfo {
 			break;
 		}
 		case 4: { // Brightness
-			ImGui::Text("br.:"); ImGui::SameLine();
+			ImGui::Text("  br.  :"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##BrightnessX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
 				paths[pathsIndex]->setEnd(p_val);
@@ -316,7 +317,7 @@ namespace AnimationInfo {
 			break;
 		}
 		case 5: { // Alpha
-			ImGui::Text("alpha:"); ImGui::SameLine();
+			ImGui::Text(" alpha:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(52.0f);
 			if (ImGui::InputFloat("##AlphaX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
 				paths[pathsIndex]->setEnd(p_val);
@@ -622,7 +623,7 @@ namespace AnimationInfo {
 					else {
 						AudioParameter ap = AudioParameter(MappingsWindow::audioIndex);
 						GraphicParameter gp = GraphicParameter(ScenesPanel::animPropIndex);
-						auto newMapping = std::make_shared<TriggerMapping>(Canvas::selectedObject, ap, gp, selectedAnimation, MapType::Trigger);
+						auto newMapping = std::make_shared<TriggerMapping>(Canvas::selectedObject, ap, gp, static_cast<std::size_t>(i), MapType::Trigger);
 						TrackFeatures::selectedTrack->mappings[MappingsWindow::audioIndex].push_back(newMapping);
 
 						Canvas::selectedObject->getAnimations(animation_index)[i]->setTrigger(true);
@@ -709,11 +710,8 @@ namespace AnimationInfo {
 
 					if (selectedPath > -1) {
 						ImGui::SameLine();
-						ImGui::BeginChild("##PathTo", ImVec2(paramX, paramY), true);
+						ImGui::BeginChild("##PathTo", ImVec2(paramX * 2.0f, paramY), true);
 						displayPathEnd(animation_index, curPoints[selectedPoint]->getPaths(), selectedPath);
-						ImGui::EndChild();
-
-						ImGui::SameLine();
 
 						static const char* easingNames[] = {
 							"Linear",
@@ -724,12 +722,12 @@ namespace AnimationInfo {
 
 						auto& path = curPoints[selectedPoint]->getPaths()[selectedPath];
 						EasingType curType = path->getEasingType();
-						const char* preview = easingNames[(int)(curType)];
+						const char* ease_preview = easingNames[(int)(curType)];
 
-						ImGui::Text("Easing Type: ");
+						ImGui::Text("Easing:");
 						ImGui::SameLine();
 						ImGui::SetNextItemWidth(100.0f);
-						if (ImGui::BeginCombo("##Easing Type", preview, ImGuiComboFlags_PopupAlignLeft)) {
+						if (ImGui::BeginCombo("##Easing Type", ease_preview, ImGuiComboFlags_PopupAlignLeft)) {
 							for (int i = 0; i < static_cast<int>(EasingType::COUNT); ++i) {
 								const char* name = easingNames[i];
 								bool   is_current = (curType == static_cast<EasingType>(i));
@@ -741,7 +739,41 @@ namespace AnimationInfo {
 							}
 							ImGui::EndCombo();
 						}
+
+						ImGui::EndChild();
+
 					}
+					ImGui::SameLine();
+					ImGui::BeginChild("##PathOptions", ImVec2(paramX * 2.0f, paramY), true);
+
+
+					static const char* loopNames[] = {
+						"Off",
+						"Sequence",
+						"Random"
+					};
+
+					LoopType curLoop = curPoints[selectedPoint]->getLoopType();
+					const char* loop_preview = loopNames[(int)(curLoop)];
+
+					ImGui::Text("Looping: ");
+					ImGui::SameLine();
+					ImGui::SetNextItemWidth(100.0f);
+					if (ImGui::BeginCombo("##Looping", loop_preview, ImGuiComboFlags_PopupAlignLeft)) {
+						for (int i = 0; i < static_cast<int>(LoopType::COUNT); ++i) {
+							const char* name = loopNames[i];
+							bool   is_current = (curLoop == static_cast<LoopType>(i));
+							if (ImGui::Selectable(name, is_current)) {
+								curPoints[selectedPoint]->setLoopType(static_cast<LoopType>(i));
+							}
+							if (is_current)
+								ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+
+					ImGui::EndChild();
+					
 				}
 				else {
 					const std::string noLines = "No Paths for Point " + std::to_string(selectedPoint + 1);

@@ -11,6 +11,7 @@ namespace GlobalTransport {
     extern float playStartTime;
 
     void setLoop();
+    extern void resetLoop();
 
     float render();
 }

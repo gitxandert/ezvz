@@ -29,18 +29,12 @@ public:
 
 	void setElapsedTime(float t) {
 		elapsedTime_ = t - startPoint_;
+		std::cout << "Elapsed time = " << elapsedTime_ << '\n';
 	}
 
 	std::vector<std::shared_ptr<AnimationPoint>>& getPoints() { return points_; }
 
-	void resetAnimation() {
-		std::cout << "resetting animation\n";
-		elapsedTime_ = 0;
-		startPoint_ = GlobalTransport::currentTime * 1000.0f;
-		is_finished_ = false;
-		pointsIndex_ = 0;
-		curValue_ = { 0.0f, 0.0f };
-	}
+	void resetAnimation();
 
 	void setTrigger(bool t) { hasTrigger_ = t; }
 	void trigger() { isTriggered_ = true; }

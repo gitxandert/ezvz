@@ -1,8 +1,16 @@
 ﻿#include "AnimationPoint.h"
 #include "Animation.h"
 
-Animation::Animation(std::shared_ptr<AnimationPoint>& start)
-{
+void Animation::resetAnimation() {
+     std::cout << "resetting animation\n";
+     elapsedTime_ = 0;
+     startPoint_ = GlobalTransport::currentTime * 1000.0f;
+     is_finished_ = false;
+     pointsIndex_ = 0;
+     curValue_ = points_[pointsIndex_]->getValue();
+}
+
+Animation::Animation(std::shared_ptr<AnimationPoint>& start){
     points_.push_back(start);
 }
 
@@ -12,7 +20,10 @@ void Animation::addPoint(std::shared_ptr<AnimationPoint>& newPoint) {
 
 glm::vec2 Animation::getValue(float t) {
     // 1) If we already completed the entire animation, return the final value.
+    std::cout << "Getting value at Point " << pointsIndex_ + 1 << "\n";
+
     if (is_finished_) {
+        std::cout << "Animation is finished\n";
         return points_.back()->getValue(1.0f);
     }
 
@@ -25,8 +36,14 @@ glm::vec2 Animation::getValue(float t) {
         // with getValue() again after finishing. In either case, we should
         // “seal off” the animation here.
         pointsIndex_ = points_.size() - 1;
-        is_finished_ = true;
-        return points_.back()->getValue(1.0f);
+        std::cout << "pointsIndex_ = " << pointsIndex_ << '\n';
+        if (points_[pointsIndex_]->getLoopType() == LoopType::Off) {
+            is_finished_ = true;
+            return points_.back()->getValue(1.0f);
+        }
+        else {
+            points_[pointsIndex_]->updatePathIndex();
+        }
     }
 
     // 4) Now we know pointsIndex_ is valid.
@@ -37,6 +54,7 @@ glm::vec2 Animation::getValue(float t) {
     if (elapsedTime_ < duration) {
         if (hasTrigger_) {
             if (isTriggered_) {
+                std::cout << "Triggering\n";
                 // — A trigger just fired “for” this point.
                 //   Snap to this point’s raw value, reset timer, move to the next index.
                 curValue_ = points_[pointsIndex_]->getValue(/* raw = no interp */);
@@ -44,11 +62,22 @@ glm::vec2 Animation::getValue(float t) {
                 isTriggered_ = false;
 
                 // Advance to the next index. If that steps off the end, mark finished.
-                pointsIndex_++;
+                if (points_[pointsIndex_]->getLoopType() == LoopType::Off) {
+                    std::cout << "Incrementing pointsIndex at isTriggered_\n";
+                    pointsIndex_++;
+                }
+                else
+					points_[pointsIndex_]->updatePathIndex();
+
                 if (pointsIndex_ >= points_.size()) {
-                    // We just moved past the final keypoint → clamp and finish.
                     pointsIndex_ = points_.size() - 1;
-                    is_finished_ = true;
+                    if (points_[pointsIndex_]->getLoopType() == LoopType::Off) {
+                        // We just moved past the final keypoint → clamp and finish.
+                        is_finished_ = true;
+                    }
+                    else {
+                        points_[pointsIndex_]->updatePathIndex();
+                    }
                 }
                 return curValue_;
             }
@@ -57,18 +86,19 @@ glm::vec2 Animation::getValue(float t) {
                 // this point yet, so we “hold” the previous value. If we’re at index 0,
                 // hold points_[0] at t=0. Otherwise interpolate the prior segment’s final.
                 float interp = elapsedTime_ / duration;
-                if (pointsIndex_ == 0) {
+                if (pointsIndex_ == 0 && points_[pointsIndex_]->getLoopType() == LoopType::Off) {
                     // Still waiting for the very first trigger
                     return points_[0]->getValue(0.0f);
                 }
                 else {
                     // “Hold” the final value of the previous point until trigger arrives
-                    return points_[pointsIndex_ - 1]->getValue(interp);
+                    return points_[pointsIndex_]->getValue(interp);
                 }
             }
         }
         else {
             // No trigger required: we interpolate continuously within this point.
+            std::cout << "no trigger\n";
             float interp = elapsedTime_ / duration;
             curValue_ = points_[pointsIndex_]->getValue(interp);
             return curValue_;
@@ -80,7 +110,13 @@ glm::vec2 Animation::getValue(float t) {
     if (!hasTrigger_ || (hasTrigger_ && isTriggered_)) {
         // Either no trigger is needed, or we just got a trigger exactly when it expired.
         // In both cases, advance to the next index.
-        pointsIndex_++;
+        if (points_[pointsIndex_]->getLoopType() == LoopType::Off) {
+            std::cout << "Incrementing pointsIndex at isTriggered_ (expired)\n";
+            pointsIndex_++;
+        }
+        else
+            points_[pointsIndex_]->updatePathIndex();
+
         if (pointsIndex_ < points_.size()) {
             // There is another point to show. Snap to its raw value and reset the clock.
             curValue_ = points_[pointsIndex_]->getValue(/* raw = no interp */);
@@ -92,9 +128,15 @@ glm::vec2 Animation::getValue(float t) {
         else {
             // We just ran off the end. Clamp index, mark finished, return final value.
             pointsIndex_ = points_.size() - 1;
-            is_finished_ = true;
-            isTriggered_ = false;
-            curValue_ = points_.back()->getValue(1.0f);
+            if (points_[pointsIndex_]->getLoopType() == LoopType::Off) {
+                is_finished_ = true;
+                isTriggered_ = false;
+                curValue_ = points_.back()->getValue(1.0f);
+            }
+            else
+            {
+                points_[pointsIndex_]->updatePathIndex();
+            }
             return curValue_;
         }
     }
@@ -110,8 +152,14 @@ glm::vec2 Animation::getValue(float t) {
 
 glm::vec2 Animation::getValue() {
     if (pointsIndex_ >= points_.size()) {
-        is_finished_ = true;
-        return points_.back()->getValue();
+        pointsIndex_ = points_.size() - 1;
+        if (points_[pointsIndex_]->getLoopType() == LoopType::Off) {
+            is_finished_ = true;
+            return points_.back()->getValue();
+        }
+        else {
+            points_[pointsIndex_]->updatePathIndex();
+        }
     }
     else
         return points_[pointsIndex_]->getValue();
