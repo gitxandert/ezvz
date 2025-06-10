@@ -22,6 +22,7 @@ namespace AnimationInfo {
 
 	static int selectedAnimation = -1;
 	static int selectedPoint = -1;
+	static int selectedPath = -1;
 	static int clickedPoint = -1;
 
 	static bool pointHovered = false;
@@ -31,11 +32,24 @@ namespace AnimationInfo {
 
 	bool settingTrigger = false;
 
+	void resetAnimationWindow() {
+		showPoints = false;
+		showAddPath = false;
+		addPath = false;
+		selectedAnimation = -1;
+		selectedPoint = -1;
+		selectedPath = -1;
+		clickedPoint = -1;
+		pointHovered = false;
+		settingTrigger = false;
+	}
+
 	glm::vec2 normalizeClick(glm::vec2 clickWorld, int p_i) {
 		switch (p_i) {
 		case 1: { //Rotation
 			clickWorld.x *= 720.0f;
 			clickWorld.x -= 360.0f;
+			clickWorld.y *= Canvas::screenH;
 			break;
 		}
 		case 0: [[fallthrough]];
@@ -60,7 +74,7 @@ namespace AnimationInfo {
 			if (selectedAnimation > -1) {
 				index = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints().size();
 				if (index > 0)
-					y = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints()[index - 1].getValue().y;
+					y = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints()[index - 1]->getValue().y;
 				else
 					y = aw_sz.y / 2.0f + aw_cm.y;
 			}
@@ -79,7 +93,7 @@ namespace AnimationInfo {
 			if (selectedAnimation > -1) {
 				index = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints().size();
 				if (index > 0)
-					y = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints()[index - 1].getValue().y;
+					y = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints()[index - 1]->getValue().y;
 				else
 					y = 0.5;
 			}
@@ -94,7 +108,7 @@ namespace AnimationInfo {
 			if (selectedAnimation > -1) {
 				index = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints().size();
 				if (index > 0)
-					y = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints()[index - 1].getValue().y;
+					y = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints()[index - 1]->getValue().y;
 				else
 					y = 0.5;
 			}
@@ -144,9 +158,9 @@ namespace AnimationInfo {
 		}
 	}
 
-	void displayParameter(int parameterIndex, std::vector<AnimationPoint>& points, int pointsIndex) {
+	void displayParameter(int parameterIndex, std::vector<std::shared_ptr<AnimationPoint>>& points, int pointsIndex) {
 		// Pull current value
-		glm::vec2 p_val = points[pointsIndex].getValue();
+		glm::vec2 p_val = points[pointsIndex]->getValue();
 
 		// Unique IDs per point
 		ImGui::PushID(pointsIndex);
@@ -156,14 +170,14 @@ namespace AnimationInfo {
 			ImGui::Text("x:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(80.0f);
 			if (ImGui::InputFloat("##PositionX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
-				points[pointsIndex].setValue(p_val);
+				points[pointsIndex]->setValue(p_val);
 				setParameter(parameterIndex, p_val);
 			}
 
 			ImGui::Text("y:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(80.0f);
 			if (ImGui::InputFloat("##PositionY", &p_val.y, 0.0f, 0.0f, "%.3f")) {
-				points[pointsIndex].setValue(p_val);
+				points[pointsIndex]->setValue(p_val);
 				setParameter(parameterIndex, p_val);
 			}
 			break;
@@ -172,7 +186,7 @@ namespace AnimationInfo {
 			ImGui::Text("rot:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##RotZ", &p_val.x, 0.0f, 0.0f, "%.3f")) {
-				points[pointsIndex].setValue(p_val);
+				points[pointsIndex]->setValue(p_val);
 				setParameter(parameterIndex, p_val);
 			}
 			break;
@@ -181,14 +195,14 @@ namespace AnimationInfo {
 			ImGui::Text("w:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(80.0f);
 			if (ImGui::InputFloat("##SizeW", &p_val.x, 0.0f, 0.0f, "%.3f")) {
-				points[pointsIndex].setValue(p_val);
+				points[pointsIndex]->setValue(p_val);
 				setParameter(parameterIndex, p_val);
 			}
 
 			ImGui::Text("h:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(80.0f);
 			if (ImGui::InputFloat("##SizeH", &p_val.y, 0.0f, 0.0f, "%.3f")) {
-				points[pointsIndex].setValue(p_val);
+				points[pointsIndex]->setValue(p_val);
 				setParameter(parameterIndex, p_val);
 			}
 			break;
@@ -197,14 +211,14 @@ namespace AnimationInfo {
 			ImGui::Text("hue:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##HueX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
-				points[pointsIndex].setValue(p_val);
+				points[pointsIndex]->setValue(p_val);
 				setParameter(parameterIndex, p_val);
 			}
 
 			ImGui::Text("sat.:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(59.0f);
 			if (ImGui::InputFloat("##SaturationY", &p_val.y, 0.0f, 0.0f, "%.3f")) {
-				points[pointsIndex].setValue(p_val);
+				points[pointsIndex]->setValue(p_val);
 				setParameter(parameterIndex, p_val);
 			}
 			break;
@@ -213,7 +227,7 @@ namespace AnimationInfo {
 			ImGui::Text("br.:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##BrightnessX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
-				points[pointsIndex].setValue(p_val);
+				points[pointsIndex]->setValue(p_val);
 				setParameter(parameterIndex, p_val);
 			}
 			break;
@@ -222,7 +236,7 @@ namespace AnimationInfo {
 			ImGui::Text("alpha:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(52.0f);
 			if (ImGui::InputFloat("##AlphaX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
-				points[pointsIndex].setValue(p_val);
+				points[pointsIndex]->setValue(p_val);
 				setParameter(parameterIndex, p_val);
 			}
 			break;
@@ -231,6 +245,87 @@ namespace AnimationInfo {
 			break;
 		}
 
+
+		ImGui::PopID();
+	}
+
+	void displayPathEnd(int parameterIndex, std::vector<std::shared_ptr<AnimationPath>>& paths, int pathsIndex) {
+		// Pull current value
+		glm::vec2 p_val = paths[pathsIndex]->getEnd();
+
+		// Unique IDs per point
+		ImGui::PushID(pathsIndex);
+
+		switch (parameterIndex) {
+		case 0: { // Position X/Y
+			ImGui::Text("x:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(80.0f);
+			if (ImGui::InputFloat("##PositionX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
+				paths[pathsIndex]->setEnd(p_val);
+			}
+
+			ImGui::Text("y:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(80.0f);
+			if (ImGui::InputFloat("##PositionY", &p_val.y, 0.0f, 0.0f, "%.3f")) {
+				paths[pathsIndex]->setEnd(p_val);
+			}
+			break;
+		}
+		case 1: { // Rotation Z
+			ImGui::Text("rot:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(66.0f);
+			if (ImGui::InputFloat("##RotZ", &p_val.x, 0.0f, 0.0f, "%.3f")) {
+				paths[pathsIndex]->setEnd(p_val);
+			}
+			break;
+		}
+		case 2: { // Size W/H
+			ImGui::Text("w:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(80.0f);
+			if (ImGui::InputFloat("##SizeW", &p_val.x, 0.0f, 0.0f, "%.3f")) {
+				paths[pathsIndex]->setEnd(p_val);
+			}
+
+			ImGui::Text("h:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(80.0f);
+			if (ImGui::InputFloat("##SizeH", &p_val.y, 0.0f, 0.0f, "%.3f")) {
+				paths[pathsIndex]->setEnd(p_val);
+			}
+			break;
+		}
+		case 3: { // Hue / Saturation
+			ImGui::Text("hue:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(66.0f);
+			if (ImGui::InputFloat("##HueX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
+				paths[pathsIndex]->setEnd(p_val);
+			}
+
+			ImGui::Text("sat.:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(59.0f);
+			if (ImGui::InputFloat("##SaturationY", &p_val.y, 0.0f, 0.0f, "%.3f")) {
+				paths[pathsIndex]->setEnd(p_val);
+			}
+			break;
+		}
+		case 4: { // Brightness
+			ImGui::Text("br.:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(66.0f);
+			if (ImGui::InputFloat("##BrightnessX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
+				paths[pathsIndex]->setEnd(p_val);
+			}
+			break;
+		}
+		case 5: { // Alpha
+			ImGui::Text("alpha:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(52.0f);
+			if (ImGui::InputFloat("##AlphaX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
+				paths[pathsIndex]->setEnd(p_val);
+			}
+			break;
+		}
+		default:
+			break;
+		}
 
 		ImGui::PopID();
 	}
@@ -264,9 +359,9 @@ namespace AnimationInfo {
 		}
 	}
 
-	void mapPoint(AnimationPoint& a_p, int parameter, int pointIndex, ImDrawList* dl) {
+	void mapPoint(std::shared_ptr<AnimationPoint>& a_p, int parameter, int pointIndex, ImDrawList* dl) {
 
-		glm::vec2 point = a_p.getValue();
+		glm::vec2 point = a_p->getValue();
 
 		calibrateValue(point, parameter);
 
@@ -319,9 +414,9 @@ namespace AnimationInfo {
 		ImGui::PopID();
 	}
 
-	void tapPoint(AnimationPoint& a_p, int parameter, int pointIndex, ImDrawList* dl) {
+	void tapPoint(std::shared_ptr<AnimationPoint>& a_p, int parameter, int pointIndex, ImDrawList* dl) {
 
-		glm::vec2 point = a_p.getValue();
+		glm::vec2 point = a_p->getValue();
 
 		calibrateValue(point, parameter);
 
@@ -347,10 +442,14 @@ namespace AnimationInfo {
 			if (!addPath)
 				clickedPoint = pointIndex;
 			else {
-				std::vector<AnimationPoint>& curPoints = Canvas::selectedObject->getAnimations(parameter)[selectedAnimation]->getPoints();
-				AnimationPath newPath = { curPoints[selectedPoint].getValue(), curPoints[pointIndex].getValue() };
-				curPoints[selectedPoint].addPath(newPath);
-				curPoints[pointIndex].addAssociatedPath(&curPoints[selectedPoint].getPaths().back());
+				std::vector<std::shared_ptr<AnimationPoint>>& curPoints = Canvas::selectedObject->getAnimations(parameter)[selectedAnimation]->getPoints();
+
+				AnimationPath newPath{ curPoints[selectedPoint]->getValue(), curPoints[pointIndex]->getValue() };
+				newPath.setEndPoint(curPoints[pointIndex]);
+
+				std::shared_ptr<AnimationPath> newPathPtr = std::make_shared<AnimationPath>(newPath);
+				curPoints[selectedPoint]->addPath(newPathPtr);
+				curPoints[pointIndex]->addAssociatedPath(curPoints[selectedPoint]->getPaths().back());
 			}
 		}
 
@@ -366,44 +465,32 @@ namespace AnimationInfo {
 		ImGui::SetNextWindowPos(aw_cm, ImGuiCond_Always);
 		ImGui::SetNextWindowSize(aw_sz, ImGuiCond_Always);
 		ImGui::SetNextWindowBgAlpha(0.3f);
-		if (ImGui::Begin("Animations", &ScenesPanel::showAnimateWindow,
+		ImGui::Begin("Animations", &ScenesPanel::showAnimateWindow,
 			ImGuiWindowFlags_NoResize
 			| ImGuiWindowFlags_NoScrollbar
-		)) {
-			if(!ScenesPanel::showAnimateWindow) {
-				selectedAnimation = -1;
-				showPoints = false;
-				showAddPath = false;
-				addPath = false;
-				selectedPoint = -1;
-				clickedPoint = -1;
-				pointHovered = false;
-				return;
-			}
-		}// &showWindow makes the window closable
+		);
 
 		if (selectedAnimation > -1) {
 			ImDrawList* dl = ImGui::GetWindowDrawList();
 			ImGuiIO& io = ImGui::GetIO();
 
-			std::vector<AnimationPoint>& curPoints = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints();
+			std::vector<std::shared_ptr<AnimationPoint>>& curPoints = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints();
 			ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
 			pointHovered = false;
 
 			for (int j = curPoints.size() - 1; j > -1; --j) {
-				tapPoint(curPoints[j], animation_index, j, dl);
-			}
-			for (int i = 0; i < curPoints.size(); ++i) {
-				mapPoint(curPoints[i], animation_index, i, dl);
-
-				std::vector<AnimationPath>& paths = curPoints[i].getPaths();
+				std::vector<std::shared_ptr<AnimationPath>>& paths = curPoints[j]->getPaths();
 				for (int k = 0; k < paths.size(); ++k) {
-					glm::vec2 start = paths[k].getStart();
-					glm::vec2 end = paths[k].getEnd();
+					glm::vec2 start = paths[k]->getStart();
+					glm::vec2 end = paths[k]->getEnd();
 					calibrateValue(start, animation_index);
 					calibrateValue(end, animation_index);
 					dl->AddLine({ start.x, start.y }, { end.x, end.y }, IM_COL32(255, 255, 0, 255));
 				}
+				tapPoint(curPoints[j], animation_index, j, dl);
+			}
+			for (int i = 0; i < curPoints.size(); ++i) {
+				mapPoint(curPoints[i], animation_index, i, dl);
 			}
 
 			if (pointHovered) {
@@ -418,10 +505,9 @@ namespace AnimationInfo {
 			bool isDragging = ImGui::IsMouseDragging(0);
 			if (clickedPoint > -1 && isDragging && !addPath) {
 				glm::vec2 clickWorld = Canvas::getClickWorld(io);
-				clickWorld.x *= Canvas::screenW;
-				clickWorld.y *= Canvas::screenH;
+				std::cout << "clickWorld = (" << clickWorld.x << ", " << clickWorld.y << ")\n";
 				glm::vec2 norm = normalizeClick(clickWorld, animation_index);
-				curPoints[clickedPoint].setValue(norm);
+				curPoints[clickedPoint]->setValue(norm);
 				setParameter(animation_index, norm);
 			}
 
@@ -431,7 +517,7 @@ namespace AnimationInfo {
 				ImGui::InvisibleButton("##animwindow", aw_sz);
 
 				if (ImGui::IsItemHovered()) {
-					glm::vec2 curP = curPoints[selectedPoint].getValue();
+					glm::vec2 curP = curPoints[selectedPoint]->getValue();
 					calibrateValue(curP, animation_index);
 
 					dl->AddLine({ curP.x, curP.y }, io.MousePos, IM_COL32(255, 255, 0, 255));
@@ -440,8 +526,9 @@ namespace AnimationInfo {
 						std::cout << "Click: " << click.x << ", " << click.y << '\n';
 						glm::vec2 clickWorld = normalizeClick(click, animation_index);
 						std::cout << "Click World: " << clickWorld.x << ", " << clickWorld.y << '\n';
-						AnimationPath newPath = { curPoints[selectedPoint].getValue(), clickWorld };
-						curPoints[selectedPoint].addPath(newPath);
+						AnimationPath newPath = { curPoints[selectedPoint]->getValue(), clickWorld };
+						std::shared_ptr<AnimationPath> newPathPtr = std::make_shared<AnimationPath>(newPath);
+						curPoints[selectedPoint]->addPath(newPathPtr);
 					}
 				}
 			}
@@ -458,6 +545,7 @@ namespace AnimationInfo {
 			showAddPath = false;
 			addPath = false;
 			selectedPoint = -1;
+			selectedPath = -1;
 			clickedPoint = -1;
 			pointHovered = false;
 		}
@@ -467,8 +555,8 @@ namespace AnimationInfo {
 
 		ImGuiIO& io = ImGui::GetIO();
 
-		ImVec2 windowPos = { 0, io.DisplaySize.y - Timeline::timelineFixedHeight };
-		ImVec2 windowSize = { io.DisplaySize.x, Timeline::timelineFixedHeight };
+		ImVec2 windowPos = { 0, io.DisplaySize.y - Timeline::timelineFixedHeight + 5 };
+		ImVec2 windowSize = { io.DisplaySize.x, Timeline::timelineFixedHeight - 5 };
 
 		if (settingTrigger) {
 			windowPos.x = io.DisplaySize.x / 2.0f;
@@ -484,7 +572,8 @@ namespace AnimationInfo {
 			if (ImGui::Button("Add Animation")) {
 				glm::vec2 param = getParameter(animation_index);
 				AnimationPoint newPoint{ param, 1000.0f };
-				std::shared_ptr<Animation> newAnimation = std::make_shared<Animation>(newPoint);
+				std::shared_ptr<AnimationPoint> newPointPtr = std::make_shared<AnimationPoint>(newPoint);
+				std::shared_ptr<Animation> newAnimation = std::make_shared<Animation>(newPointPtr);
 				Canvas::selectedObject->add_animation(newAnimation, animation_index);
 			}
 		}
@@ -494,7 +583,8 @@ namespace AnimationInfo {
 			if (ImGui::Button("Add Point")) {
 				glm::vec2 param = getParameter(animation_index);
 				AnimationPoint newPoint{ param, 1000.0f };
-				Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->addPoint(newPoint);
+				std::shared_ptr<AnimationPoint> newPointPtr = std::make_shared<AnimationPoint>(newPoint);
+				Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->addPoint(newPointPtr);
 				int size = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints().size();
 				std::cout << "AnimationPoints size = " << size << '\n';
 			}
@@ -559,8 +649,9 @@ namespace AnimationInfo {
 
 		if (showPoints) {
 			ImGui::SameLine();
-			ImGui::BeginChild("##AnimationPoints", ImVec2(io.DisplaySize.x - 325, 0), true);
-			std::vector<AnimationPoint>& curPoints = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints();
+			float pointsX = io.DisplaySize.x - 325.0f;
+			ImGui::BeginChild("##AnimationPoints", ImVec2(pointsX, 0), true);
+			std::vector<std::shared_ptr<AnimationPoint>>& curPoints = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints();
 			for (int j = 0; j < curPoints.size(); ++j) {
 				std::string selectableName = "Point " + std::to_string(j + 1);
 				bool is_selected = (j == selectedPoint);
@@ -569,7 +660,11 @@ namespace AnimationInfo {
 					if (j != selectedPoint) {
 						selectedPoint = j;
 						showAddPath = true;
-						setParameter(animation_index, curPoints[j].getValue());
+						setParameter(animation_index, curPoints[j]->getValue());
+					}
+					else {
+						selectedPoint = -1;
+						showAddPath = false;
 					}
 				}
 			}
@@ -577,16 +672,82 @@ namespace AnimationInfo {
 			ImGui::Separator();
 
 			if (selectedPoint > -1 && selectedPoint < curPoints.size()) {
-				ImGui::Indent(10.0f);
+				float paramX = 120.0f;
+				float paramY = 110.0f;
+				ImGui::BeginChild("##ParamInfo", ImVec2(paramX,paramY), true);
 				displayParameter(animation_index, curPoints, selectedPoint);
-				float dur = curPoints[selectedPoint].getDuration();
+				float dur = curPoints[selectedPoint]->getDuration();
 				ImGui::Text("t:");
 				ImGui::SameLine();
 				ImGui::SetNextItemWidth(80.0f);
 				if (ImGui::InputFloat("##DurationInput", &dur, 0.0f, 0.0f, "%.3f")) {
-					curPoints[selectedPoint].setDuration(dur);
+					curPoints[selectedPoint]->setDuration(dur);
 				}
-				ImGui::Unindent(10.0f);
+				ImGui::EndChild();
+				ImGui::SameLine();
+				ImGui::BeginChild("Lines", ImVec2(pointsX - paramX - 40.0f, paramY), true);
+				std::size_t paths_size = curPoints[selectedPoint]->getPaths().size();
+				if (paths_size > 0) {
+					ImGui::BeginChild("##LineSelectables", ImVec2(paramX, 110.0f), true);
+					for (std::size_t i = 0; i < paths_size; ++i) {
+						ImGui::PushID(i);
+
+						const std::string pathName = "-> Path " + std::to_string(i + 1);
+						bool is_selected = (i == selectedPath);
+						if (ImGui::Selectable(pathName.c_str(), is_selected, 0, { 100, 0 })) {
+							if (i != selectedPath) {
+								selectedPath = i;
+							}
+							else {
+								selectedPath = -1;
+							}
+						}
+
+						ImGui::PopID();
+					}
+					ImGui::EndChild();
+
+					if (selectedPath > -1) {
+						ImGui::SameLine();
+						ImGui::BeginChild("##PathTo", ImVec2(paramX, paramY), true);
+						displayPathEnd(animation_index, curPoints[selectedPoint]->getPaths(), selectedPath);
+						ImGui::EndChild();
+
+						ImGui::SameLine();
+
+						static const char* easingNames[] = {
+							"Linear",
+							"EaseIn",
+							"EaseOut",
+							"EaseInOut"
+						};
+
+						auto& path = curPoints[selectedPoint]->getPaths()[selectedPath];
+						EasingType curType = path->getEasingType();
+						const char* preview = easingNames[(int)(curType)];
+
+						ImGui::Text("Easing Type: ");
+						ImGui::SameLine();
+						ImGui::SetNextItemWidth(100.0f);
+						if (ImGui::BeginCombo("##Easing Type", preview, ImGuiComboFlags_PopupAlignLeft)) {
+							for (int i = 0; i < static_cast<int>(EasingType::COUNT); ++i) {
+								const char* name = easingNames[i];
+								bool   is_current = (curType == static_cast<EasingType>(i));
+								if (ImGui::Selectable(name, is_current)) {
+									path->setEasingType(static_cast<EasingType>(i));
+								}
+								if (is_current)
+									ImGui::SetItemDefaultFocus();
+							}
+							ImGui::EndCombo();
+						}
+					}
+				}
+				else {
+					const std::string noLines = "No Paths for Point " + std::to_string(selectedPoint + 1);
+					ImGui::Text(noLines.c_str());
+				}
+				ImGui::EndChild();
 			}
 			ImGui::EndChild();
 		}

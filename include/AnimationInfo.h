@@ -8,4 +8,5 @@ namespace AnimationInfo {
 
 	void showAnimationWindow();
 	void showAnimationInfo(const std::string&, std::size_t);
+	extern void resetAnimationWindow();
 }
