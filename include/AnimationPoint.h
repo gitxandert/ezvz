@@ -48,7 +48,7 @@ public:
     float getDuration();
     void setDuration(float dur);
 
-	void setLoopType(LoopType loop) { loopType_ = loop; }
+    void setLoopType(LoopType loop);
 	LoopType getLoopType() const { return loopType_; }
 
     void updatePathIndex();
@@ -130,4 +130,9 @@ inline void AnimationPoint::updatePathIndex() {
     }
     default: break;
     }
+}
+
+inline void AnimationPoint::setLoopType(LoopType loop) {
+    loopType_ = loop;
+    path_index_ = 0;
 }

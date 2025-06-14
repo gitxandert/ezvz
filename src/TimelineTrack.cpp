@@ -60,8 +60,10 @@ void TimelineTrack::updateMappings() {
             ),
             v.end()
         );
-        for (auto& m : v)
+        for (auto& m : v) {
+            std::cout << "i'm mapping\n";
             m->mapParameter(getParamValue(static_cast<AudioParameter>(ap)));
+        }
     }
 }
 

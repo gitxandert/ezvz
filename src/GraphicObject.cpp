@@ -231,12 +231,9 @@ void GraphicObject::update() {
             }
         }
         else if (animations_[parameter].size() > 0) {
-            std::cout << "Animations ahoy\n";
             if (!animations_[parameter][0]->is_finished()) {
-                std::cout << "Updating animation value\n";
                 glm::vec2 updateValue = animations_[parameter][0]->getValue(GlobalTransport::currentTime * 1000.0f);
 
-                std::cout << "Setting parameter with value (" << updateValue.x << ", " << updateValue.y << ")\n";
                 setParameter(parameter, updateValue);
             }
         }

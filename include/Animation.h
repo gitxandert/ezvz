@@ -15,6 +15,8 @@ enum class AnimationTraversion : int {
 	Connected
 };
 
+enum class EasingType;
+enum class LoopType;
 class AnimationPoint;
 
 class Animation {
@@ -27,12 +29,10 @@ public:
 	glm::vec2 getValue(float t);
 	glm::vec2 getValue();
 
-	void setElapsedTime(float t) {
-		elapsedTime_ = t - startPoint_;
-		std::cout << "Elapsed time = " << elapsedTime_ << '\n';
-	}
+	void setElapsedTime(float t);
 
 	std::vector<std::shared_ptr<AnimationPoint>>& getPoints() { return points_; }
+	void updatePointsIndex();
 
 	void resetAnimation();
 
@@ -40,6 +40,15 @@ public:
 	void trigger() { isTriggered_ = true; }
 	bool hasTrigger() { return hasTrigger_; }
 	bool is_finished() { return is_finished_; }
+
+	const LoopType const getLoopType();
+	void setLoopType(LoopType);
+	const EasingType const getEasingType();
+	void setEasingType(EasingType);
+
+	float easingFunction(float);
+	void setTotalDuration();
+	float getEasedTime(float);
 
 private:
 	std::vector<std::shared_ptr<AnimationPoint>> points_;
@@ -49,11 +58,22 @@ private:
 
 	bool hasTrigger_ = false;
 	bool isTriggered_ = false;
+	bool justStarted_ = true;
 
-	float elapsedTime_ = 0;
-	float startPoint_ = 0;
-	// pointStart_needs to be initialized with currentTime at the beginning of playback and reset if the animation loops
+	int loopCount = 0;
 
-	bool is_looping_ = false;
+	float elapsedTime_ = 0.000f;
+	float startPoint_ = 0.000f;
+	// startPoint_needs to be initialized with currentTime at the beginning of playback and reset if the animation loops
+
+	LoopType animLoopType_;
+	EasingType animEaseType_;
+
+	float originalStartPoint_ = 0.000f;
+	float totalElapsedTime_ = 0.000f;
+	float totalDuration_ = 0.000f;
+	float totalWarpTime_ = 0.000f;
+	float easedElapsedTime_ = 0.000f;
+
 	bool is_finished_ = false;
 };

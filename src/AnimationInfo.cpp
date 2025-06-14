@@ -575,6 +575,7 @@ namespace AnimationInfo {
 				AnimationPoint newPoint{ param, 1000.0f };
 				std::shared_ptr<AnimationPoint> newPointPtr = std::make_shared<AnimationPoint>(newPoint);
 				std::shared_ptr<Animation> newAnimation = std::make_shared<Animation>(newPointPtr);
+				newAnimation->setTotalDuration();
 				Canvas::selectedObject->add_animation(newAnimation, animation_index);
 			}
 		}
@@ -586,6 +587,7 @@ namespace AnimationInfo {
 				AnimationPoint newPoint{ param, 1000.0f };
 				std::shared_ptr<AnimationPoint> newPointPtr = std::make_shared<AnimationPoint>(newPoint);
 				Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->addPoint(newPointPtr);
+				Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->setTotalDuration();
 				int size = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints().size();
 				std::cout << "AnimationPoints size = " << size << '\n';
 			}
@@ -648,11 +650,25 @@ namespace AnimationInfo {
 
 		ImGui::EndChild();
 
+		static const char* easingNames[] = {
+			"Linear",
+			"EaseIn",
+			"EaseOut",
+			"EaseInOut"
+		};
+		static const char* loopNames[] = {
+			"Off",
+			"Sequence",
+			"Random"
+		};
+
 		if (showPoints) {
+			std::shared_ptr<Animation> curAnimation = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation];
+
 			ImGui::SameLine();
-			float pointsX = io.DisplaySize.x - 325.0f;
+			float pointsX = io.DisplaySize.x - 500.0f;
 			ImGui::BeginChild("##AnimationPoints", ImVec2(pointsX, 0), true);
-			std::vector<std::shared_ptr<AnimationPoint>>& curPoints = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]->getPoints();
+			std::vector<std::shared_ptr<AnimationPoint>>& curPoints = curAnimation->getPoints();
 			for (int j = 0; j < curPoints.size(); ++j) {
 				std::string selectableName = "Point " + std::to_string(j + 1);
 				bool is_selected = (j == selectedPoint);
@@ -673,9 +689,10 @@ namespace AnimationInfo {
 			ImGui::Separator();
 
 			if (selectedPoint > -1 && selectedPoint < curPoints.size()) {
+
 				float paramX = 120.0f;
-				float paramY = 110.0f;
-				ImGui::BeginChild("##ParamInfo", ImVec2(paramX,paramY), true);
+				float paramY = 0.0f;
+				ImGui::BeginChild("##ParamInfo", ImVec2(paramX, paramY), true);
 				displayParameter(animation_index, curPoints, selectedPoint);
 				float dur = curPoints[selectedPoint]->getDuration();
 				ImGui::Text("t:");
@@ -683,13 +700,15 @@ namespace AnimationInfo {
 				ImGui::SetNextItemWidth(80.0f);
 				if (ImGui::InputFloat("##DurationInput", &dur, 0.0f, 0.0f, "%.3f")) {
 					curPoints[selectedPoint]->setDuration(dur);
+					curAnimation->setTotalDuration();
 				}
-				ImGui::EndChild();
+				ImGui::EndChild(/* ParamInfo */);
+
 				ImGui::SameLine();
-				ImGui::BeginChild("Lines", ImVec2(pointsX - paramX - 40.0f, paramY), true);
+				ImGui::BeginChild("Paths", ImVec2(pointsX - paramX - 40.0f, paramY), true);
 				std::size_t paths_size = curPoints[selectedPoint]->getPaths().size();
 				if (paths_size > 0) {
-					ImGui::BeginChild("##LineSelectables", ImVec2(paramX, 110.0f), true);
+					ImGui::BeginChild("##PathSelectables", ImVec2(paramX, 110.0f), true);
 					for (std::size_t i = 0; i < paths_size; ++i) {
 						ImGui::PushID(i);
 
@@ -706,19 +725,12 @@ namespace AnimationInfo {
 
 						ImGui::PopID();
 					}
-					ImGui::EndChild();
+					ImGui::EndChild(/* PathSelectables */);
 
 					if (selectedPath > -1) {
 						ImGui::SameLine();
 						ImGui::BeginChild("##PathTo", ImVec2(paramX * 2.0f, paramY), true);
 						displayPathEnd(animation_index, curPoints[selectedPoint]->getPaths(), selectedPath);
-
-						static const char* easingNames[] = {
-							"Linear",
-							"EaseIn",
-							"EaseOut",
-							"EaseInOut"
-						};
 
 						auto& path = curPoints[selectedPoint]->getPaths()[selectedPath];
 						EasingType curType = path->getEasingType();
@@ -740,24 +752,16 @@ namespace AnimationInfo {
 							ImGui::EndCombo();
 						}
 
-						ImGui::EndChild();
+						ImGui::EndChild(/* PathTo */);
 
 					}
 					ImGui::SameLine();
-					ImGui::BeginChild("##PathOptions", ImVec2(paramX * 2.0f, paramY), true);
-
-
-					static const char* loopNames[] = {
-						"Off",
-						"Sequence",
-						"Random"
-					};
+					ImGui::BeginChild("##PathOptions", ImVec2(paramX, paramY), true);
 
 					LoopType curLoop = curPoints[selectedPoint]->getLoopType();
 					const char* loop_preview = loopNames[(int)(curLoop)];
 
-					ImGui::Text("Looping: ");
-					ImGui::SameLine();
+					ImGui::Text("Path Loop: ");
 					ImGui::SetNextItemWidth(100.0f);
 					if (ImGui::BeginCombo("##Looping", loop_preview, ImGuiComboFlags_PopupAlignLeft)) {
 						for (int i = 0; i < static_cast<int>(LoopType::COUNT); ++i) {
@@ -772,16 +776,60 @@ namespace AnimationInfo {
 						ImGui::EndCombo();
 					}
 
-					ImGui::EndChild();
-					
+					ImGui::EndChild(/* PathOptions*/);
+
 				}
 				else {
 					const std::string noLines = "No Paths for Point " + std::to_string(selectedPoint + 1);
 					ImGui::Text(noLines.c_str());
 				}
-				ImGui::EndChild();
+
+
+				ImGui::EndChild(/* Paths */);
+
 			}
-			ImGui::EndChild();
+			ImGui::EndChild(/* AnimationPoints */);
+
+			ImGui::SameLine();
+			ImGui::BeginChild("##AnimationOptions", ImVec2(120.0f, 0.0f), true);
+
+			LoopType curLoop = curAnimation->getLoopType();
+			const char* loop_preview = loopNames[(int)(curLoop)];
+
+			ImGui::Text("Points Loop: ");
+			ImGui::SetNextItemWidth(100.0f);
+			if (ImGui::BeginCombo("##PointsLoop", loop_preview, true)) {
+				for (int i = 0; i < static_cast<int>(LoopType::COUNT); ++i) {
+					const char* name = loopNames[i];
+					bool   is_current = (curLoop == static_cast<LoopType>(i));
+					if (ImGui::Selectable(name, is_current)) {
+						curAnimation->setLoopType(static_cast<LoopType>(i));
+					}
+					if (is_current)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			EasingType curEasing = curAnimation->getEasingType();
+			const char* ease_preview = easingNames[(int)(curEasing)];
+
+			ImGui::Text("Points Easing: ");
+			ImGui::SetNextItemWidth(100.0f);
+			if (ImGui::BeginCombo("##PointsEasing", ease_preview, true)){
+				for (int i = 0; i < static_cast<int>(EasingType::COUNT); ++i) {
+					const char* name = easingNames[i];
+					bool   is_current = (curEasing == static_cast<EasingType>(i));
+					if (ImGui::Selectable(name, is_current)) {
+						curAnimation->setEasingType(static_cast<EasingType>(i));
+					}
+					if (is_current)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			ImGui::EndChild(/* AnimationOptions */);
 		}
 
 		ImGui::End();

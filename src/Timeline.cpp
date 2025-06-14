@@ -17,7 +17,7 @@ namespace Timeline {
     float pixelsPerMs = 0.0f;
     float userScreenWidth = 0.0f;
     const float trackHeight = 20.0f;
-    const float timelineFixedHeight = 200.0f;
+    float timelineFixedHeight = 250.0f;
 
     bool isDraggingScene = false;
     float tempSceneStart = 0.0f;

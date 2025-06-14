@@ -16,7 +16,7 @@ namespace Timeline {
     extern float basePixelsPerMs;
     extern float pixelsPerMs;
     extern const float trackHeight;
-    extern const float timelineFixedHeight;
+    extern float timelineFixedHeight;
     extern float userScreenWidth;
 
     extern bool isDraggingScene;

@@ -160,6 +160,7 @@ public:
 		: Mapping(obj, ap, gp, mp, gpy)
 	{
 		input_range_ = MappingRanges::inputRanges[static_cast<int>(ap)];
+		input_range_.x = input_range_.y / 1000.0f;
 		map_input_ = input_range_;
 		output_range_ = MappingRanges::outputRanges(gp, gpy, input_drag_speed_, output_drag_speed_);
 		map_output_ = output_range_;
@@ -240,25 +241,31 @@ public:
 		, animation_index_(animation_index)
 	{
 		input_range_ = MappingRanges::inputRanges[static_cast<int>(ap)];
+		input_range_.x = input_range_.y / 1000.0f;
 		threshold_ = input_range_.x;
 	}
 
 	void mapParameter(float value) override {
 		bool shouldTrigger = false;
 		if (isGreaterThan_) {
-			if (value >= threshold_)
+			if (value >= threshold_) {
 				shouldTrigger = true;
+			}
 		}
 		else {
 			if (value <= threshold_)
 				shouldTrigger = true;
 		}
 
+		std::cout << "shouldTrigger = " << std::boolalpha << shouldTrigger << '\n';
+
 		if (shouldTrigger) {
+			std::cout << "should trigger now...\n";
 			if (!hasReachedThreshold_) {
 				hasReachedThreshold_ = true;
+				std::cout << "... if I've reached this threshold, which yes, I have\n";
 				if (auto obj = getMappedObject()) {
-					std::cout << "animation_index_ = " << animation_index_ << '\n';
+					std::cout << "triggering animation = " << animation_index_ + 1 << '\n';
 					obj->getAnimations(static_cast<std::size_t>(getGraphicParameter()))[animation_index_]->trigger();
 				}
 			}
@@ -274,7 +281,7 @@ public:
 		ImGui::Text("Threshold");
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(100.0f);
-		ImGui::DragFloat("##Threshold", &threshold_, input_drag_speed_, input_range_.y / 1000.0f, input_range_.y);
+		ImGui::DragFloat("##Threshold", &threshold_, input_drag_speed_, input_range_.x, input_range_.y, "%.3f");
 
 		ImGui::SameLine();
 		const char* greater_than_label = isGreaterThan_ ? ">" : "<";
