@@ -277,9 +277,6 @@ public:
 
 	void showMappingParametersUI() override
 	{
-		ImGui::Indent(10.0f);
-		ImGui::Text("Threshold");
-		ImGui::SameLine();
 		ImGui::SetNextItemWidth(100.0f);
 		ImGui::DragFloat("##Threshold", &threshold_, input_drag_speed_, input_range_.x, input_range_.y, "%.3f");
 
@@ -288,7 +285,9 @@ public:
 		if(ImGui::Button(greater_than_label)) {
 			isGreaterThan_ = !isGreaterThan_;
 		}
-		ImGui::Unindent(10.0f);
+
+		ImGui::SameLine();
+		ImGui::Text("Threshold");
 	}
 
 private:

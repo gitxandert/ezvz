@@ -68,6 +68,8 @@ namespace MappingsWindow {
 
 		ImGui::NewLine();
 
+		ImGui::BeginChild("##Mappings", ImVec2(io.DisplaySize.x - 25.0f, 0), true);
+
 		if(selectedTrack->mappings[p_index].size() > 0){
 			std::vector<std::shared_ptr<Mapping>>& cur_mappings = selectedTrack->mappings[p_index];
 			for (std::size_t i = 0; i < cur_mappings.size(); ++i) {
@@ -88,14 +90,16 @@ namespace MappingsWindow {
 		ImGui::Separator();
 
 		if (isMappingSelected) {
-			ImGui::Indent(10.0f);
+			ImGui::BeginChild("##SelectedMapping", ImVec2(0, 0), true);
 			const std::string& mapTypeName = selectedTrack->mappings[p_index][selectedMappingIndex]->getMapTypeName();
 			const std::string& objectName = selectedTrack->mappings[p_index][selectedMappingIndex]->getMappedObject()->getId();
 			const std::string& parameterName = ScenesPanel::parameters[static_cast<std::size_t>(selectedTrack->mappings[p_index][selectedMappingIndex]->getGraphicParameter())];
 			ImGui::Text((mapTypeName + " : " + objectName + " -> " + parameterName).c_str());
 			selectedTrack->mappings[p_index][selectedMappingIndex]->showMappingParametersUI();
-			ImGui::Unindent(10.0f);
+			ImGui::EndChild();
 		}
+		
+		ImGui::EndChild();
 
 		if (addingMapping) {
 			// Calculate blink alpha (0.0 = transparent, 1.0 = opaque)
