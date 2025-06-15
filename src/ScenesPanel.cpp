@@ -421,7 +421,7 @@ namespace ScenesPanel {
                 auto& obj = scene->objects[i];
                 ImGui::PushID((int)i);
 
-                if (editingIndex == (int)i) {
+                if (obj->getObjectType() != ObjectType::Background && editingIndex == (int)i) {
                     // --- Inline edit mode ---
                     // give it focus so you actually see the cursor
                     ImGui::SetKeyboardFocusHere();
@@ -455,7 +455,7 @@ namespace ScenesPanel {
                         }
                     }
 
-                    if (selectedIndex == (int)i){
+                    if (selectedIndex == (int)i && obj->getObjectType() != ObjectType::Background){
                         if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_R)) {
                             editingIndex = i;
                             strncpy(renameBuf,
@@ -485,40 +485,41 @@ namespace ScenesPanel {
 
                     ImGui::Text("Properties");
 
-                    // Position
-                    glm::vec3 worldPos{ obj->getTransform().position };
+                    if (obj->getObjectType() != ObjectType::Background) {
+                        // Position
+                        glm::vec3 worldPos{ obj->getTransform().position };
 
-                    minPos[0] = ImGui::GetCursorScreenPos();
+                        minPos[0] = ImGui::GetCursorScreenPos();
 
-                    if (ImGui::DragFloat2(parameters[0].c_str(), &worldPos.x, 1.0f, -FLT_MAX, FLT_MAX, "%.1f")) {
-                        worldPos.x = worldPos.x;
-                        worldPos.y = worldPos.y;
-                        obj->setPosition(worldPos);
+                        if (ImGui::DragFloat2(parameters[0].c_str(), &worldPos.x, 1.0f, -FLT_MAX, FLT_MAX, "%.1f")) {
+                            worldPos.x = worldPos.x;
+                            worldPos.y = worldPos.y;
+                            obj->setPosition(worldPos);
+                        }
+
+                        hoverFunc(dl, minPos[0], avail, lh, 0);
+
+                        // Rotation
+                        glm::vec3 rot = obj->getTransform().rotation;
+
+                        minPos[1] = ImGui::GetCursorScreenPos();
+
+                        if (ImGui::DragFloat(parameters[1].c_str(), &rot.z, 0.5f, -360.0f, 360.0f, "%.0f°")) {
+                            obj->setRotation(rot);
+                        }
+
+                        hoverFunc(dl, minPos[1], avail, lh, 1);
+
+                        // Size
+                        glm::vec3 size = obj->getSize();
+
+                        minPos[2] = ImGui::GetCursorScreenPos();
+
+                        if (ImGui::DragFloat2(parameters[2].c_str(), &size.x, 1.0f, -FLT_MAX, FLT_MAX, "%.1f"))
+                            obj->setSize(size);
+
+                        hoverFunc(dl, minPos[2], avail, lh, 2);
                     }
-
-					hoverFunc(dl, minPos[0], avail, lh, 0);
-
-                    // Rotation
-                    glm::vec3 rot = obj->getTransform().rotation;
-
-                    minPos[1] = ImGui::GetCursorScreenPos();
-
-                    if (ImGui::DragFloat(parameters[1].c_str(), &rot.z, 0.5f, -360.0f, 360.0f, "%.0f°")) {
-                        obj->setRotation(rot);
-                    }
-
-					hoverFunc(dl, minPos[1], avail, lh, 1);
-
-                    // Size
-                    glm::vec3 size = obj->getSize();
-
-                    minPos[2] = ImGui::GetCursorScreenPos();
- 
-                    if (ImGui::DragFloat2(parameters[2].c_str(), &size.x, 1.0f, -FLT_MAX, FLT_MAX, "%.1f"))
-                        obj->setSize(size);
-
-					hoverFunc(dl, minPos[2], avail, lh, 2);
-
                     // Hue/Saturation
                     glm::vec4 col = rgb2hsv(obj->getMaterial().color);
 
@@ -543,7 +544,7 @@ namespace ScenesPanel {
                     if (ImGui::DragFloat(parameters[5].c_str(), &col.w, 0.005f, 0.0f, 1.0f, "%.3f"))
                         obj->setColor(hsv2rgb(col));
 
-                    if (obj->getObjectType() != ObjectType::Line) {
+                    if (obj->getObjectType() != ObjectType::Line && obj->getObjectType() != ObjectType::Background) {
                         bool isFilled = obj->isFilled();
                         if (ImGui::Checkbox("Fill", &isFilled)) {
                             obj->setFilled(isFilled);
