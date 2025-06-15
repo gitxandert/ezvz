@@ -77,6 +77,7 @@ void Animation::setElapsedTime(float t) {
 }
 
 glm::vec2 Animation::getValue(float t) {
+    std::cout << "pointsIndex_ = " << pointsIndex_ << '\n';
 
     // 1) If we already completed the entire animation, return the final value.
     if (is_finished_)
@@ -91,9 +92,11 @@ glm::vec2 Animation::getValue(float t) {
     // 4) Update elapsedTime_ relative to the last startPoint_.
     setElapsedTime(t);
 
+
+
     // ────────────────────────────────────────────────────────────────────────
     // 5) CASE A: Still “within” this point’s duration window
-    if (elapsedTime_ < duration) {
+    if (easedElapsedTime_ < duration) {
         if (hasTrigger_) {
             std::cout << "has trigger\n";
             if (isTriggered_) {
@@ -150,13 +153,16 @@ glm::vec2 Animation::getValue(float t) {
         // In both cases, advance to the next index.
         if (points_[pointsIndex_]->getLoopType() != LoopType::Off)
             points_[pointsIndex_]->updatePathIndex();
-
+        
         updatePointsIndex();
+        std::cout << "is_finished = " << std::boolalpha << is_finished_ << '\n';
         totalWarpTime_ += duration;
         startPoint_ = t;
         elapsedTime_ = 0.0f;
 
-        curValue_ = points_[pointsIndex_]->getValue();
+        if(!is_finished_)
+            curValue_ = points_[pointsIndex_]->getValue();
+
         return curValue_;
     }
     else {

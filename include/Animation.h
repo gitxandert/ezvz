@@ -5,16 +5,6 @@
 #include "GlobalTransport.h"
 #include <iostream>
 
-// vector traversion
-// only Animations use Connected
-enum class AnimationTraversion : int {
-	Sequential,
-	Drunken,
-	Random,
-	Defined,
-	Connected
-};
-
 enum class EasingType;
 enum class LoopType;
 class AnimationPoint;

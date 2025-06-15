@@ -116,7 +116,7 @@ inline void AnimationPoint::updatePathIndex() {
 
     switch (loopType_) {
     case LoopType::Sequence: {
-        if (path_index_ < paths_.size() - 1)
+        if (path_index_ < paths_.size())
             ++path_index_;
         else
 			path_index_ = 0; // Loop back to the start

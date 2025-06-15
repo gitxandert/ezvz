@@ -666,7 +666,7 @@ namespace AnimationInfo {
 			std::shared_ptr<Animation> curAnimation = Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation];
 
 			ImGui::SameLine();
-			float pointsX = io.DisplaySize.x - 500.0f;
+			float pointsX = io.DisplaySize.x - 620.0f;
 			ImGui::BeginChild("##AnimationPoints", ImVec2(pointsX, 0), true);
 			std::vector<std::shared_ptr<AnimationPoint>>& curPoints = curAnimation->getPoints();
 			for (int j = 0; j < curPoints.size(); ++j) {
@@ -688,7 +688,7 @@ namespace AnimationInfo {
 
 			ImGui::Separator();
 
-			if (selectedPoint > -1 && selectedPoint < curPoints.size()) {
+			if (selectedPoint > -1) {
 
 				float paramX = 120.0f;
 				float paramY = 0.0f;
@@ -705,7 +705,7 @@ namespace AnimationInfo {
 				ImGui::EndChild(/* ParamInfo */);
 
 				ImGui::SameLine();
-				ImGui::BeginChild("Paths", ImVec2(pointsX - paramX - 40.0f, paramY), true);
+				ImGui::BeginChild("Paths", ImVec2(pointsX - paramX - 25.0f, paramY), true);
 				std::size_t paths_size = curPoints[selectedPoint]->getPaths().size();
 				if (paths_size > 0) {
 					ImGui::BeginChild("##PathSelectables", ImVec2(paramX, 110.0f), true);
@@ -830,6 +830,31 @@ namespace AnimationInfo {
 			}
 
 			ImGui::EndChild(/* AnimationOptions */);
+		}
+
+		if (Canvas::selectedObject->animations_size() > 0) {
+			ImGui::SameLine();
+			ImGui::BeginChild("##AnimationsLoop", ImVec2(150.0f, 0.0f), true);
+
+			LoopType curLoop = Canvas::selectedObject->getLoopType();
+			const char* loop_preview = loopNames[(int)(curLoop)];
+
+			ImGui::Text("Animations Loop: ");
+			ImGui::SetNextItemWidth(100.0f);
+			if (ImGui::BeginCombo("##PointsLoop", loop_preview, true)) {
+				for (int i = 0; i < static_cast<int>(LoopType::COUNT); ++i) {
+					const char* name = loopNames[i];
+					bool   is_current = (curLoop == static_cast<LoopType>(i));
+					if (ImGui::Selectable(name, is_current)) {
+						Canvas::selectedObject->setLoopType(static_cast<LoopType>(i));
+					}
+					if (is_current)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			ImGui::EndChild(/* AnimationsLoop */);
 		}
 
 		ImGui::End();
