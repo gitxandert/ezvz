@@ -5,6 +5,9 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include <iostream>
+#include "Canvas.h"
+#include "GraphicObject.h"
+#include "Rectangle.h"
 
 namespace Timeline {
 
@@ -49,6 +52,7 @@ namespace Timeline {
     }
 
     void render(float currentTime) {
+
         if (!ScenesPanel::showAnimateWindow && !TrackFeatures::showMappings) {
             ImGuiIO& io = ImGui::GetIO();
             ImGui::SetNextWindowPos(ImVec2(0, io.DisplaySize.y - timelineFixedHeight + 5), ImGuiCond_Always);
@@ -69,7 +73,14 @@ namespace Timeline {
                     isDraggingScene = true;
                 }
                 else {
-                    scenes.push_back(std::make_shared<Scene>(Scene{ tempSceneStart, tempSceneEnd, tempColor }));
+                    std::shared_ptr<Scene> newScene = std::make_shared<Scene>(Scene{ tempSceneStart, tempSceneEnd, tempColor });
+                    std::string id = "Background";
+                    std::shared_ptr<GraphicObject> background = std::make_shared<RectangleObject>(ObjectType::Background, id);
+                    background->setSize(glm::vec3(Canvas::screenW, Canvas::screenH, 0.0f));
+                    background->setPosition(glm::vec3(0.0f + Canvas::screenW/2.0f, 0.0f + Canvas::screenH/2.0f, 0.0f));
+                    background->setColor(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+                    newScene->objects.push_back(background);
+                    scenes.push_back(newScene);
                     isDraggingScene = false;
                 }
 

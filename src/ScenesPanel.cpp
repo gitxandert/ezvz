@@ -2,13 +2,17 @@
 #include <vector>
 #include <string>
 #include <array>
+#include <iostream>
 #include "Canvas.h"
 #include "Timeline.h"
 #include "imgui.h"
 #include "Scene.h"
 #include "GraphicObject.h"
+#include "Line.h"
 #include "Rectangle.h"
 #include "Ellipse.h"
+#include "Triangle.h"
+#include "Star.h"
 #include "GlobalTransport.h"
 #include "AnimationInfo.h"
 #include "Mapping.h"
@@ -94,12 +98,26 @@ namespace ScenesPanel {
                     id += std::to_string(objectCount[idx]);
                     switch (type)
                     {
-                    case ObjectType::Rectangle:
+                    case ObjectType::Line: {
+                        obj = std::make_shared<LineObject>(type, id);
+                        break;
+                    }
+                    case ObjectType::Rectangle: {
                         obj = std::make_shared<RectangleObject>(type, id);
                         break;
-                    case ObjectType::Ellipse:
+                    }
+                    case ObjectType::Ellipse: {
                         obj = std::make_shared<EllipseObject>(type, id);
-						break;
+                        break;
+                    }
+                    case ObjectType::Triangle: {
+                        obj = std::make_shared<TriangleObject>(type, id);
+                        break;
+                    }
+                    case ObjectType::Star: {
+                        obj = std::make_shared<StarObject>(type, id);
+                        break;
+                    }
                     default: break;
                     }
                     obj->setPosition(Canvas::c_center());
@@ -318,6 +336,7 @@ namespace ScenesPanel {
     }
 
 	void render() {
+
         ImGuiIO& io = ImGui::GetIO();
 
         float displayX = io.DisplaySize.x;
@@ -363,13 +382,13 @@ namespace ScenesPanel {
         ImGui::SameLine();
         ImGui::BeginChild("##SceneTabContent", ImVec2(0, 0), false);
         // guard against empty
+
         if (!Timeline::scenes.empty()) {
             auto& scene = Timeline::scenes[activeScene];
-
+            std::cout << "objects.size() = " << scene->objects.size() << '\n';
             // --- header ---
             ImGui::TextUnformatted("Objects");
             ImGui::Separator();
-
 
             if (ImGui::Button("Add Object")) {
                 ImGui::OpenPopup("AddObjectPopup");
@@ -523,6 +542,20 @@ namespace ScenesPanel {
 
                     if (ImGui::DragFloat(parameters[5].c_str(), &col.w, 0.005f, 0.0f, 1.0f, "%.3f"))
                         obj->setColor(hsv2rgb(col));
+
+                    if (obj->getObjectType() != ObjectType::Line) {
+                        bool isFilled = obj->isFilled();
+                        if (ImGui::Checkbox("Fill", &isFilled)) {
+                            obj->setFilled(isFilled);
+                        }
+                        if (!obj->isFilled()) {
+                            float stroke = obj->getStroke();
+                            ImGui::SameLine();
+                            if (ImGui::DragFloat("##Stroke", &stroke, 1.0f, 20.0f, 0.1f, "%.1f", true)) {
+                                obj->setStroke(stroke);
+                            }
+                        }
+                    }
 
 					hoverFunc(dl, minPos[5], avail, lh, 5);
 

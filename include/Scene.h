@@ -2,11 +2,13 @@
 #include <vector>
 #include <memory>
 #include "imgui.h"
+#include "Canvas.h"
 #include "GraphicObject.h"
+#include "Rectangle.h"
 
 struct Scene {
 	Scene(float start, float end, ImU32 col)
-		: color(col) 
+		: color(col)
 	{
 		if (end - start <= 1000.0f) {
 			end = start + 1000.0f;
