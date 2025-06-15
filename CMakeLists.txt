@@ -17,10 +17,13 @@ set(SOURCES
     src/Ellipse.cpp
     src/GlobalTransport.cpp
     src/GraphicObject.cpp
+    src/Line.cpp
     src/MappingsWindow.cpp
+    src/Star.cpp
     src/Timeline.cpp
     src/TimelineTrack.cpp
     src/TrackFeatures.cpp
+    src/Triangle.cpp
     src/main.cpp
     src/Rectangle.cpp
     src/ScenesPanel.cpp
