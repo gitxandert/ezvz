@@ -68,7 +68,13 @@ std::vector<std::shared_ptr<Animation>>& GraphicObject::getAnimations(std::size_
     return animations_[index];
 }
 
-void GraphicObject::resetAnimations() {
+void GraphicObject::resetAnimations(bool restart) {
+    if (restart)
+        noMoreAnimations_ = 0;
+
+    for(auto& animationIndex : animationIndices_)
+        animationIndex = 0;
+
     for (std::size_t i = 0; i < animations_size(); ++i) {
         for (auto& animation : animations_[i]) {
             animation->resetAnimation();
@@ -204,6 +210,7 @@ void GraphicObject::setNewMapBools(int paramIndex, bool isY) {
 void GraphicObject::update() {
     std::cout << "Updating graphic object\n";
     for (int parameter = 0; parameter < animations_.size(); ++parameter) {
+        std::size_t currentAnimation = animationIndices_[parameter];
         if ((newMapBools_ & (1u << parameter)) != 0) {
             switch (parameter) {
             case 0: [[fallthrough]];
@@ -211,16 +218,16 @@ void GraphicObject::update() {
             case 3: {
                 if ((isNewMapY_ & (1u << parameter)) != 0) {
                     if (animations_[parameter].size() > 0) {
-                        if (!animations_[parameter][0]->is_finished()) {
-                            glm::vec2 updateValue = animations_[parameter][0]->getValue(GlobalTransport::currentTime * 1000.0f);
+                        if (!animations_[parameter][currentAnimation]->is_finished()) {
+                            glm::vec2 updateValue = animations_[parameter][currentAnimation]->getValue(GlobalTransport::currentTime * 1000.0f);
                             transform_.position.x = updateValue.x;
                         }
                     }
                 }
                 else {
                     if (animations_[parameter].size() > 0) {
-                        if (!animations_[parameter][0]->is_finished()) {
-                            glm::vec2 updateValue = animations_[parameter][0]->getValue(GlobalTransport::currentTime * 1000.0f);
+                        if (!animations_[parameter][currentAnimation]->is_finished()) {
+                            glm::vec2 updateValue = animations_[parameter][currentAnimation]->getValue(GlobalTransport::currentTime * 1000.0f);
                             transform_.position.y = updateValue.y;
                         }
                     }
@@ -230,15 +237,66 @@ void GraphicObject::update() {
             default: break;
             }
         }
-        else if (animations_[parameter].size() > 0) {
-            if (!animations_[parameter][0]->is_finished()) {
-                glm::vec2 updateValue = animations_[parameter][0]->getValue(GlobalTransport::currentTime * 1000.0f);
+        else if (animations_[parameter].size() > 0 && (noMoreAnimations_ & (1u << parameter)) == 0) {
+            bool animationIsFinished = animations_[parameter][currentAnimation]->is_finished();
+            std::cout << "animationIsFinished = " << std::boolalpha << animationIsFinished << '\n';
+            if (!animationIsFinished) {
+                glm::vec2 updateValue = animations_[parameter][currentAnimation]->getValue(GlobalTransport::currentTime * 1000.0f);
 
                 setParameter(parameter, updateValue);
+            }
+            else {
+                updateAnimationIndex(parameter);
             }
         }
     }
 
     newMapBools_ = 0;
     isNewMapY_ = 0;
+}
+
+
+void GraphicObject::setLoopType(LoopType loop) {
+    loopType_ = loop;
+}
+
+const LoopType const GraphicObject::getLoopType() {
+    return loopType_;
+}
+
+void GraphicObject::updateAnimationIndex(int parameter) {
+    auto& currentAnimationIndex = animationIndices_[parameter];
+    std::cout << "currentAnimationIndex = " << currentAnimationIndex << '\n';
+
+    switch (loopType_) {
+    case LoopType::Off: {
+        animations_[parameter][currentAnimationIndex]->resetAnimation();
+        currentAnimationIndex++;
+        if (currentAnimationIndex >= animations_size(parameter)) {
+            currentAnimationIndex -= 1;
+            noMoreAnimations_ |= (1u << parameter);
+        }
+        else {
+            animations_[parameter][currentAnimationIndex]->resetAnimation();
+        }
+        break;
+    }
+    case LoopType::Sequence: {
+        animations_[parameter][currentAnimationIndex]->resetAnimation();
+        currentAnimationIndex++;
+        if (currentAnimationIndex >= animations_size(parameter)) {
+            currentAnimationIndex = 0;
+        }
+        animations_[parameter][currentAnimationIndex]->resetAnimation();
+        break;
+    }
+    case LoopType::Random: {
+        animations_[parameter][currentAnimationIndex]->resetAnimation();
+        std::uniform_int_distribution<int> dist(0, animations_size(parameter) - 1);
+        int random_index = dist(get_rng());
+        currentAnimationIndex = (std::size_t)(random_index);
+        animations_[parameter][currentAnimationIndex]->resetAnimation();
+        break;
+    }
+    }
 }

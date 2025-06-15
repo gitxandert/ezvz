@@ -25,6 +25,16 @@ void RectangleObject::setSize(float width, float height) {
     setSize({ width, height, 0.0f });
 }
 
+void RectangleObject::setStroke(float stroke) {
+    stroke_ = stroke;
+    cleanup();
+}
+
+void RectangleObject::setFilled(bool filled) {
+    filled_ = filled;
+    cleanup();
+}
+
 void RectangleObject::cleanup() {
     if (meshInitialized_) {
         glDeleteVertexArrays(1, &VAO_);
@@ -39,14 +49,47 @@ void RectangleObject::initMesh() {
 
     float halfW = size_.x * 0.5f;
     float halfH = size_.y * 0.5f;
+    float outerHalfW = halfW + stroke_ * 0.5f;
+    float outerHalfH = halfH + stroke_ * 0.5f;
+
     float vertices[] = {
-        // positions    // UVs
-        -halfW, -halfH,  0.0f, 0.0f,
-            halfW, -halfH,  1.0f, 0.0f,
-            halfW,  halfH,  1.0f, 1.0f,
-        -halfW,  halfH,  0.0f, 1.0f
+        // Inner quad (indices 0–3)
+        -halfW, -halfH,  // 0
+         halfW, -halfH,  // 1
+         halfW,  halfH,  // 2
+        -halfW,  halfH,  // 3
+
+        // Outer quad (indices 4–7)
+        -outerHalfW, -outerHalfH,  // 4
+         outerHalfW, -outerHalfH,  // 5
+         outerHalfW,  outerHalfH,  // 6
+        -outerHalfW,  outerHalfH   // 7
     };
-    unsigned int indices[] = { 0, 1, 2, 2, 3, 0 };
+
+    // Indices for inner fill quad (2 triangles)
+    unsigned int fillIndices[] = {
+        0, 1, 2,
+        2, 3, 0
+    };
+
+    // Indices for border ring (8 triangles, 4 sides)
+    unsigned int strokeIndices[] = {
+        // bottom
+        4, 0, 1,
+        1, 5, 4,
+
+        // right
+        5, 1, 2,
+        2, 6, 5,
+
+        // top
+        6, 2, 3,
+        3, 7, 6,
+
+        // left
+        7, 3, 0,
+        0, 4, 7
+    };
 
     glGenVertexArrays(1, &VAO_);
     glGenBuffers(1, &VBO_);
@@ -57,25 +100,31 @@ void RectangleObject::initMesh() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+    // Store both fill + stroke indices in one EBO
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(fillIndices) + sizeof(strokeIndices), nullptr, GL_STATIC_DRAW);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(fillIndices), fillIndices);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, sizeof(fillIndices), sizeof(strokeIndices), strokeIndices);
 
-    // position attribute
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    // UV attribute
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 
     glBindVertexArray(0);
     meshInitialized_ = true;
 }
+
 
 void RectangleObject::draw() {
     if (!meshInitialized_) initMesh();
 
     // Assumes shader is already bound and uniforms (uModel, uColor) are set externally
     glBindVertexArray(VAO_);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    if (filled_) {
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+    else {
+        glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_INT, (void*)(6 * sizeof(unsigned int)));
+    }
     glBindVertexArray(0);
 }

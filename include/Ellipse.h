@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "GraphicObject.h"
+#include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <string>
 
@@ -18,9 +19,11 @@ public:
     // Sets full width & height
     void setSize(const glm::vec3& size);
     void setSize(float width, float height) { setSize({ width, height, 0.0f }); }
+    void setStroke(float stroke) override;
 
     // Convenience: set radii directly
     void setRadius(float rx, float ry);
+    void setFilled(bool filled) override;
 
     // Mesh smoothness
     void setSegments(int segments);
@@ -34,6 +37,8 @@ private:
 
     glm::vec2 radii_{ 100.0f, 100.0f };   // (rx, ry)
     int        segments_{ 64 };           // rim vertex count
+    GLuint strokeEBO_ = 0;
+    GLsizei strokeIndexCount_ = 0;
 
     unsigned int VAO_{ 0 }, VBO_{ 0 };
     bool meshInitialized_{ false };

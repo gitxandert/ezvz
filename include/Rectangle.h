@@ -19,6 +19,9 @@ public:
     void draw() override;
     void cleanup();
 
+    void setStroke(float) override;
+    void setFilled(bool filled) override;
+
 private:
     glm::vec2 size_{ 200.0f, 200.0f };
 

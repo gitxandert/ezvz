@@ -45,6 +45,16 @@ void EllipseObject::setSegments(int segments) {
     }
 }
 
+void EllipseObject::setStroke(float stroke) {
+    stroke_ = stroke;
+    cleanup();
+}
+
+void EllipseObject::setFilled(bool filled) {
+    filled_ = filled;
+    cleanup();
+}
+
 // ── GL resource management ───────────────────────────────────────
 
 void EllipseObject::cleanup() {
@@ -52,6 +62,10 @@ void EllipseObject::cleanup() {
         glDeleteVertexArrays(1, &VAO_);
         glDeleteBuffers(1, &VBO_);
         VAO_ = VBO_ = 0;
+        if (strokeEBO_ != 0) {
+            glDeleteBuffers(1, &strokeEBO_);
+            strokeEBO_ = 0;
+        }
         meshInitialized_ = false;
     }
 }
@@ -59,59 +73,98 @@ void EllipseObject::cleanup() {
 void EllipseObject::initMesh() {
     if (meshInitialized_) return;
 
-    // Centre + (segments+1) rim vertices (duplicate first rim vtx to close fan)
-    const int vertCount = segments_ + 2;
     std::vector<float> vertices;
-    vertices.reserve(vertCount * 4);     // 2 pos + 2 UV each
+    std::vector<unsigned int> indices;
 
-    // --- centre vertex ---
-    vertices.insert(vertices.end(), { 0.0f, 0.0f, 0.5f, 0.5f });
+    if (filled_) {
+        // --- Filled ellipse: center + rim
+        const int vertCount = segments_ + 2;
+        vertices.reserve(vertCount * 4);
 
-    // --- rim vertices ---
-    for (int i = 0; i <= segments_; ++i) {
-        float theta = (static_cast<float>(i) / segments_) * 2.0f * PI;
-        float x = std::cos(theta) * radii_.x;
-        float y = std::sin(theta) * radii_.y;
+        vertices.insert(vertices.end(), { 0.0f, 0.0f, 0.5f, 0.5f }); // center
 
-        // UVs: simple polar mapping into [0,1]
-        float u = 0.5f + 0.5f * std::cos(theta);
-        float v = 0.5f + 0.5f * std::sin(theta);
+        for (int i = 0; i <= segments_; ++i) {
+            float theta = (float(i) / segments_) * 2.0f * PI;
+            float x = std::cos(theta) * radii_.x;
+            float y = std::sin(theta) * radii_.y;
+            float u = 0.5f + 0.5f * std::cos(theta);
+            float v = 0.5f + 0.5f * std::sin(theta);
+            vertices.insert(vertices.end(), { x, y, u, v });
+        }
 
-        vertices.insert(vertices.end(), { x, y, u, v });
+    }
+    else {
+        // --- Outlined ellipse: inner + outer ring vertices
+        for (int i = 0; i <= segments_; ++i) {
+            float theta = (float(i) / segments_) * 2.0f * PI;
+
+            float cosT = std::cos(theta);
+            float sinT = std::sin(theta);
+
+            float xInner = cosT * radii_.x;
+            float yInner = sinT * radii_.y;
+
+            float xOuter = cosT * (radii_.x + stroke_ * 0.5f);
+            float yOuter = sinT * (radii_.y + stroke_ * 0.5f);
+
+            float u = 0.5f + 0.5f * cosT;
+            float v = 0.5f + 0.5f * sinT;
+
+            // outer first, then inner — makes strip winding consistent
+            vertices.insert(vertices.end(), { xOuter, yOuter, u, v });
+            vertices.insert(vertices.end(), { xInner, yInner, u, v });
+        }
+
+        // Create triangle strip indices: 2 indices per segment (2 triangles per quad)
+        for (int i = 0; i < segments_; ++i) {
+            unsigned int idx = i * 2;
+            indices.insert(indices.end(), {
+                idx, idx + 1,
+                idx + 2, idx + 3
+                });
+        }
     }
 
-    // --- upload ---
+    // Upload to GPU
     glGenVertexArrays(1, &VAO_);
     glGenBuffers(1, &VBO_);
-
     glBindVertexArray(VAO_);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO_);
-    glBufferData(GL_ARRAY_BUFFER,
-        vertices.size() * sizeof(float),
-        vertices.data(),
-        GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
-    // position (location 0)
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
-        4 * sizeof(float), (void*)0);
-    // UV (location 1)
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
-        4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    if (!filled_) {
+        glGenBuffers(1, &strokeEBO_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, strokeEBO_);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+        strokeIndexCount_ = static_cast<GLsizei>(indices.size());
+    }
 
     glBindVertexArray(0);
     meshInitialized_ = true;
 }
+
 
 // ── Draw ─────────────────────────────────────────────────────────
 
 void EllipseObject::draw() {
     if (!meshInitialized_) initMesh();
 
-    // Assumes shader already bound, uniforms set externally
     glBindVertexArray(VAO_);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, segments_ + 2);
+
+    if (filled_) {
+        glDrawArrays(GL_TRIANGLE_FAN, 0, segments_ + 2);
+    }
+    else {
+        glDrawElements(GL_TRIANGLE_STRIP, strokeIndexCount_, GL_UNSIGNED_INT, 0);
+    }
+
     glBindVertexArray(0);
 }
+

@@ -8,23 +8,27 @@
 #include <glm/vec4.hpp>
 #include "Animation.h"
 #include "AnimationInfo.h"
+#include "AnimationPoint.h"
 #include "ScenesPanel.h"
 
 // Supported primitive and custom object types
 enum class ObjectType : int {
-    Point = 0,
+    Background = -1,
     Line,
     Rectangle,
     Ellipse,
+    Triangle,
+    Star,
     COUNT
     //etc.
 };
 
 static constexpr const char* objectTypeNames[] = {
-    "Point",
     "Line",
     "Rectangle",
-    "Ellipse"
+    "Ellipse",
+    "Triangle",
+    "Star"
 };
 
 enum class GraphicParameter : std::size_t {
@@ -60,6 +64,7 @@ public:
     // Identification
     const std::string& getId() const;
     const char* getType() const;
+    const ObjectType& getObjectType() const { return type_; }
 
     void setId(const char* newId);
 
@@ -82,9 +87,8 @@ public:
     int animations_size(int i=-1);
     void add_animation(std::shared_ptr<Animation> newAnimation, std::size_t animations_index);
     std::vector<std::shared_ptr<Animation>>& getAnimations(std::size_t index);
-    void resetAnimations();
+    void resetAnimations(bool restart=true);
 
-  
     void setMapped(int paramIndex, bool isY);
     void setUnmapped(int paramIndex, bool isY);
     bool isMapped(int paramIndex);
@@ -102,11 +106,28 @@ public:
     virtual glm::vec3 getSize() const = 0;
     virtual void setSize(const glm::vec3& size) = 0;
 
+    void setLoopType(LoopType);
+    const LoopType const getLoopType();
+
+    void updateAnimationIndex(int);
+
+    virtual void setFilled(bool filled) = 0;
+    bool isFilled() const { return filled_; }
+    virtual void setStroke(float stroke) = 0;
+    float getStroke() const { return stroke_; }
+
 protected:
     std::string    id_;
     ObjectType     type_;
     Transform      transform_;
     Material       material_;
+
+    bool filled_ = true;
+    float stroke_ = 2.0f;
+
+    LoopType loopType_ = LoopType::Off;
+    std::array<std::size_t, 6> animationIndices_{};
+    unsigned int noMoreAnimations_ = 0;
 
     std::array<std::vector<std::shared_ptr<Animation>>, static_cast<std::size_t>(GraphicParameter::COUNT)> animations_;
 
