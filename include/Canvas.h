@@ -23,7 +23,11 @@ namespace Canvas {
 	extern ImVec2 fboDrawPos;
 	extern float fboDrawW, fboDrawH;
 
-	extern glm::vec2 getClickWorld(const ImGuiIO&);
+	extern glm::mat4 view;
+	extern glm::vec3 cameraEye;
+
+	extern glm::vec2 getClickWorld(const glm::vec2& screenPos);
+	extern glm::vec2 worldToScreen(glm::vec3 worldPos, const ImVec2& screenOrigin, const ImVec2& screenSize);
 
 	extern glm::mat4 projFullScreen;
 

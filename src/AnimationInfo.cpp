@@ -45,24 +45,39 @@ namespace AnimationInfo {
 		GlobalTransport::resetLoop();
 	}
 
-	glm::vec2 normalizeClick(glm::vec2 clickWorld, int p_i) {
-		switch (p_i) {
-		case 1: { //Rotation
-			clickWorld.x *= 720.0f;
-			clickWorld.x -= 360.0f;
-			clickWorld.y *= Canvas::screenH;
+	glm::vec2 normalizeClick(glm::vec2 screenPoint, int param) {
+		switch (param) {
+		case 0: { // Position
+			glm::vec2 local = { screenPoint.x - Canvas::cm.x, screenPoint.y - Canvas::cm.y };  // pixel coords relative to Canvas
+			glm::vec2 world = Canvas::getClickWorld(local);   // convert to world-space at z = 0
+			screenPoint = world;
 			break;
 		}
-		case 0: [[fallthrough]];
-		case 2: { // Position, Size
-			clickWorld.x *= Canvas::screenW;
-			clickWorld.y *= Canvas::screenH;
+		case 1: { // Rotation
+			float xNorm = (screenPoint.x - aw_cm.x) / aw_sz.x;
+			screenPoint.x = xNorm * 720.0f - 360.0f;
+
+			float yNorm = 1.0f - (screenPoint.y - aw_cm.y) / aw_sz.y;
+			screenPoint.y = yNorm * Canvas::screenH;
+			break;
+		}
+		case 2: { // Size
+			glm::vec2 local = { screenPoint.x - Canvas::cm.x, screenPoint.y - Canvas::cm.y };  // pixel coords relative to Canvas
+			glm::vec2 world = Canvas::getClickWorld(local);   // convert to world-space at z = 0
+			screenPoint = world;
+			break;
+		}
+		case 3: [[fallthrough]];
+		case 4: [[fallthrough]];
+		case 5: { // Color (normalized)
+			float xNorm = (screenPoint.x - aw_cm.x) / aw_sz.x;
+			float yNorm = 1.0f - (screenPoint.y - aw_cm.y) / aw_sz.y;
+			screenPoint = glm::vec2(xNorm, yNorm);
 			break;
 		}
 		default: break;
 		}
-
-		return clickWorld;
+		return screenPoint;
 	}
 
 	glm::vec2 getParameter(int p_i) {
@@ -335,8 +350,7 @@ namespace AnimationInfo {
 
 		switch (param) {
 		case 0: { // Position
-			point.x = aw_cm.x + (point.x / Canvas::screenW) * aw_sz.x;
-			point.y = aw_sz.y - (point.y / Canvas::screenH) * aw_sz.y + aw_cm.y;
+			point = Canvas::worldToScreen({ point, 0.0f }, aw_cm, aw_sz);
 			break;
 		}
 		case 1: { // Rotation
@@ -345,8 +359,7 @@ namespace AnimationInfo {
 			break;
 		}
 		case 2: { // Size
-			point.x = (point.x / Canvas::screenW) * aw_sz.x + aw_cm.x;
-			point.y = aw_sz.y - (point.y / Canvas::screenH) * aw_sz.y + aw_cm.y;
+			point = Canvas::worldToScreen({ point, 0.0f }, aw_cm, aw_sz);
 			break;
 		}
 		case 3: [[fallthrough]];
@@ -505,11 +518,9 @@ namespace AnimationInfo {
 
 			bool isDragging = ImGui::IsMouseDragging(0);
 			if (clickedPoint > -1 && isDragging && !addPath) {
-				glm::vec2 clickWorld = Canvas::getClickWorld(io);
-				std::cout << "clickWorld = (" << clickWorld.x << ", " << clickWorld.y << ")\n";
-				glm::vec2 norm = normalizeClick(clickWorld, animation_index);
-				curPoints[clickedPoint]->setValue(norm);
-				setParameter(animation_index, norm);
+				glm::vec2 clickWorld = normalizeClick({io.MousePos.x, io.MousePos.y}, animation_index);
+				curPoints[clickedPoint]->setValue(clickWorld);
+				setParameter(animation_index, clickWorld);
 			}
 
 			if (addPath) {
@@ -523,10 +534,7 @@ namespace AnimationInfo {
 
 					dl->AddLine({ curP.x, curP.y }, io.MousePos, IM_COL32(255, 255, 0, 255));
 					if (ImGui::IsItemClicked()) {
-						glm::vec2 click = Canvas::getClickWorld(io);
-						std::cout << "Click: " << click.x << ", " << click.y << '\n';
-						glm::vec2 clickWorld = normalizeClick(click, animation_index);
-						std::cout << "Click World: " << clickWorld.x << ", " << clickWorld.y << '\n';
+						glm::vec2 clickWorld = normalizeClick({ io.MousePos.x, io.MousePos.y }, animation_index);
 						AnimationPath newPath = { curPoints[selectedPoint]->getValue(), clickWorld };
 						std::shared_ptr<AnimationPath> newPathPtr = std::make_shared<AnimationPath>(newPath);
 						curPoints[selectedPoint]->addPath(newPathPtr);

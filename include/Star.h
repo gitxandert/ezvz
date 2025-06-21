@@ -18,7 +18,7 @@ public:
     void cleanup();
 
 private:
-    glm::vec2 radii_ = { 100.0f, 100.0f };
+    glm::vec2 radii_ = { 0.5f, 0.5f };
 
     unsigned int VAO_{ 0 }, VBO_{ 0 }, EBO_{ 0 };
     void initMesh();

@@ -23,7 +23,7 @@ public:
     void setFilled(bool filled) override;
 
 private:
-    glm::vec2 size_{ 200.0f, 200.0f };
+    glm::vec2 size_{ 1.0f, 1.0f };
 
     // OpenGL resources (vertex array, buffers)
     unsigned int VAO_{ 0 }, VBO_{ 0 }, EBO_{ 0 };

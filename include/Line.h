@@ -18,7 +18,7 @@ public:
     void cleanup();
 
 private:
-    glm::vec2 size_{ 200.0f, 0.0f };  // x = length, y = unused
+    glm::vec2 size_{ 1.0f, 1.0f };  // x = length, y = unused
 
     unsigned int VAO_{ 0 }, VBO_{ 0 };
     void initMesh();

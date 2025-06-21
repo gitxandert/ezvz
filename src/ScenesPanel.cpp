@@ -120,7 +120,6 @@ namespace ScenesPanel {
                     }
                     default: break;
                     }
-                    obj->setPosition(Canvas::c_center());
                     Timeline::currentScene->objects.push_back(obj);
                     ImGui::CloseCurrentPopup();
                 }
@@ -491,7 +490,7 @@ namespace ScenesPanel {
 
                         minPos[0] = ImGui::GetCursorScreenPos();
 
-                        if (ImGui::DragFloat2(parameters[0].c_str(), &worldPos.x, 1.0f, -FLT_MAX, FLT_MAX, "%.1f")) {
+                        if (ImGui::DragFloat2(parameters[0].c_str(), &worldPos.x, 0.005f, -FLT_MAX, FLT_MAX, "%.3f")) {
                             worldPos.x = worldPos.x;
                             worldPos.y = worldPos.y;
                             obj->setPosition(worldPos);
@@ -504,7 +503,7 @@ namespace ScenesPanel {
 
                         minPos[1] = ImGui::GetCursorScreenPos();
 
-                        if (ImGui::DragFloat(parameters[1].c_str(), &rot.z, 0.5f, -360.0f, 360.0f, "%.0f°")) {
+                        if (ImGui::DragFloat(parameters[1].c_str(), &rot.z, 0.5f, -360.0f, 360.0f, "%.3f°")) {
                             obj->setRotation(rot);
                         }
 
@@ -515,7 +514,7 @@ namespace ScenesPanel {
 
                         minPos[2] = ImGui::GetCursorScreenPos();
 
-                        if (ImGui::DragFloat2(parameters[2].c_str(), &size.x, 1.0f, -FLT_MAX, FLT_MAX, "%.1f"))
+                        if (ImGui::DragFloat2(parameters[2].c_str(), &size.x, 0.005f, -FLT_MAX, FLT_MAX, "%.3f"))
                             obj->setSize(size);
 
                         hoverFunc(dl, minPos[2], avail, lh, 2);
@@ -552,7 +551,7 @@ namespace ScenesPanel {
                         if (!obj->isFilled()) {
                             float stroke = obj->getStroke();
                             ImGui::SameLine();
-                            if (ImGui::DragFloat("##Stroke", &stroke, 1.0f, 20.0f, 0.1f, "%.1f", true)) {
+                            if (ImGui::DragFloat("##Stroke", &stroke, 0.005f, 0.005f, 10.0f, "%.3f", true)) {
                                 obj->setStroke(stroke);
                             }
                         }

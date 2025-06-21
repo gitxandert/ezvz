@@ -27,6 +27,9 @@ namespace Canvas {
 
     float Canvas::screenW, Canvas::screenH;
 
+    glm::mat4 view = glm::mat4(1.0f);
+    glm::vec3 cameraEye = glm::vec3(0.0f, 0.0f, 10.0f);
+
     glm::mat4 Canvas::projFullScreen;
 
     ImVec2 cm, sz;
@@ -39,21 +42,33 @@ namespace Canvas {
     std::shared_ptr<Scene> currScene;
 
     // helper to turn ImGui::MousePos → world‐space click
-    glm::vec2 getClickWorld(const ImGuiIO& io) {
-        // 1) raw mouse relative to Canvas top‐left (origin = top‐left, +y down)
-        glm::vec2 rawLocal{
-          io.MousePos.x - cm.x,
-          io.MousePos.y - cm.y
-        };
+    glm::vec2 getClickWorld(const glm::vec2& screenPos) {
 
-        // 2) flip y so origin = bottom‐left (now +y up)
-        rawLocal.y = sz.y - rawLocal.y;
+        glm::vec2 viewportSize = { sz.x, sz.y };
 
-        // 3) un‐scale back into full‐screen world-coords
-        return {
-          rawLocal.x / float(sz.x),
-          rawLocal.y / float(sz.y)
-        };
+        float x = (2.0f * screenPos.x) / viewportSize.x - 1.0f;
+        float y = (2.0f * screenPos.y) / viewportSize.y - 1.0f;
+        glm::vec4 rayNDC = glm::vec4(x, y, -1.0f, 1.0f);
+
+        glm::mat4 invVP = glm::inverse(projFullScreen * view);
+        glm::vec4 rayWorldNear = invVP * rayNDC;
+        rayWorldNear /= rayWorldNear.w;
+
+        glm::vec3 rayDir = glm::normalize(glm::vec3(rayWorldNear) - cameraEye);
+        float t = (0.0f - cameraEye.z) / rayDir.z;  // intersection with z=0
+        return cameraEye + t * rayDir;
+    }
+
+
+    glm::vec2 worldToScreen(glm::vec3 worldPos, const ImVec2& screenOrigin, const ImVec2& screenSize) {
+        glm::vec4 clip = projFullScreen * view * glm::vec4(worldPos, 1.0f);
+        clip /= clip.w;
+
+        // NDC to ImGui screen
+        float x = (clip.x * 0.5f + 0.5f) * screenSize.x + screenOrigin.x;
+        float y = (clip.y * 0.5f + 0.5f) * screenSize.y + screenOrigin.y;
+
+        return { x, y };
     }
 
     bool hitTestOBB(
@@ -86,7 +101,11 @@ namespace Canvas {
         screenW = static_cast<float>(w);
         screenH = static_cast<float>(h);
 
-        projFullScreen = glm::ortho(0.0f, screenW, screenH, 0.0f);
+        float p_fov = glm::radians(45.0f);
+        float p_aspect = screenW / screenH;
+        float p_near = 0.1f;
+        float p_far = 100.0f;
+        projFullScreen = glm::perspective(p_fov, p_aspect, p_near, p_far);
 
         glGenFramebuffers(1, &msFbo);
         glBindFramebuffer(GL_FRAMEBUFFER, msFbo);
@@ -405,17 +424,25 @@ namespace Canvas {
         fboDrawPos.x += (Canvas::sz.x - drawW) * 0.5f;
         fboDrawPos.y += (Canvas::sz.y - drawH) * 0.5f;
 
-
-
         int newW = int(sz.x), newH = int(sz.y);
         if (newW != currentW || newH != currentH) {
             // Recreate MSAA + single-sample attachments at exactly newW×newH
             recreate(newW, newH);
             // Update “world” dims
-            projFullScreen = glm::ortho(0.0f, screenW, screenH, 0.0f);
+            float p_fov = glm::radians(45.0f);
+            float p_near = 0.1f;
+            float p_far = 100.0f;
+
+            projFullScreen = glm::perspective(p_fov, aspectFBO, p_near, p_far);
+
             currentW = newW;
             currentH = newH;
         }
+
+        glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);   // Looking at origin
+        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);       // Up direction 
+        view = glm::lookAt(cameraEye, center, up);
+
 
         glBindFramebuffer(GL_FRAMEBUFFER, msFbo);
         glViewport(0, 0, newW, newH);
@@ -427,6 +454,7 @@ namespace Canvas {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader->bind();
+        shader->setUniformMat4("uView", view);
         shader->setUniformMat4("uProjection", projFullScreen);
 
         // 6) Draw shapes
@@ -438,9 +466,7 @@ namespace Canvas {
 
                 // 2) build the “base” model matrix (we’ll reuse for both passes)
                 glm::mat4 translate = glm::translate(glm::mat4(1.0f),
-                    { T.position.x,
-                      T.position.y,
-                      0.0f });
+                    T.position);
                 glm::mat4 rotate = glm::rotate(glm::mat4(1.0f),
                     glm::radians(-T.rotation.z),
                     glm::vec3{ 0,0,1 });
@@ -457,8 +483,7 @@ namespace Canvas {
                         { T.scale.x * haloFactor,
                             T.scale.y * haloFactor,
                             1.0f });
-
-                    glm::mat4 haloModel = translate * rotate * haloScale;
+                    glm::mat4 haloModel = translate * rotate * baseScale;
                     shader->setUniformMat4("uModel", haloModel);
 
                     // translucent yellow/orange
@@ -516,10 +541,7 @@ namespace Canvas {
             };
             // flip Y:
             pixel.y = fboDrawH - pixel.y;
-            glm::vec2 world = {
-              pixel.x * (screenW / fboDrawW),
-              pixel.y * (screenH / fboDrawH)
-            };
+            glm::vec2 world = getClickWorld(pixel);
 
             if (selectedObject) {
                 auto& T = selectedObject->getTransform();
@@ -547,10 +569,7 @@ namespace Canvas {
             };
             // flip Y:
             pixel.y = fboDrawH - pixel.y;
-            glm::vec2 world = {
-              pixel.x * (screenW / fboDrawW),
-              pixel.y * (screenH / fboDrawH)
-            };
+            glm::vec2 world = getClickWorld(pixel);
 
             if (io.MouseDown[ImGuiMouseButton_Left]) {
                 selectedObject->setPosition({ world.x + dragOffset.x, world.y + dragOffset.y, 0.0f });

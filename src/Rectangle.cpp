@@ -54,16 +54,16 @@ void RectangleObject::initMesh() {
 
     float vertices[] = {
         // Inner quad (indices 0–3)
-        -halfW, -halfH,  // 0
-         halfW, -halfH,  // 1
-         halfW,  halfH,  // 2
-        -halfW,  halfH,  // 3
+        -halfW, -halfH, 0.0f, // 0
+         halfW, -halfH, 0.0f, // 1
+         halfW,  halfH, 0.0f, // 2
+        -halfW,  halfH, 0.0f, // 3
 
         // Outer quad (indices 4–7)
-        -outerHalfW, -outerHalfH,  // 4
-         outerHalfW, -outerHalfH,  // 5
-         outerHalfW,  outerHalfH,  // 6
-        -outerHalfW,  outerHalfH   // 7
+        -outerHalfW, -outerHalfH, 0.0f, // 4
+         outerHalfW, -outerHalfH, 0.0f, // 5
+         outerHalfW,  outerHalfH, 0.0f, // 6
+        -outerHalfW,  outerHalfH,  0.0f // 7
     };
 
     // Indices for inner fill quad (2 triangles)
@@ -107,7 +107,7 @@ void RectangleObject::initMesh() {
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, sizeof(fillIndices), sizeof(strokeIndices), strokeIndices);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
     glBindVertexArray(0);
     meshInitialized_ = true;

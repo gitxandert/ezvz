@@ -77,8 +77,6 @@ void Animation::setElapsedTime(float t) {
 }
 
 glm::vec2 Animation::getValue(float t) {
-    std::cout << "pointsIndex_ = " << pointsIndex_ << '\n';
-
     // 1) If we already completed the entire animation, return the final value.
     if (is_finished_)
         return curValue_;
@@ -91,8 +89,6 @@ glm::vec2 Animation::getValue(float t) {
 
     // 4) Update elapsedTime_ relative to the last startPoint_.
     setElapsedTime(t);
-
-
 
     // ────────────────────────────────────────────────────────────────────────
     // 5) CASE A: Still “within” this point’s duration window

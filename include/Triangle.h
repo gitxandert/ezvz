@@ -21,7 +21,7 @@ public:
     void cleanup();
 
 private:
-    glm::vec2 size_{ 200.0f, 200.0f };  // base x height
+    glm::vec2 size_{ 1.0f, 1.0f };  // base x height
 
     unsigned int VAO_{ 0 }, VBO_{ 0 }, EBO_{ 0 };
     void initMesh();

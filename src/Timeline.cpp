@@ -74,12 +74,12 @@ namespace Timeline {
                 }
                 else {
                     std::shared_ptr<Scene> newScene = std::make_shared<Scene>(Scene{ tempSceneStart, tempSceneEnd, tempColor });
-                    std::string id = "Background";
-                    std::shared_ptr<GraphicObject> background = std::make_shared<RectangleObject>(ObjectType::Background, id);
-                    background->setSize(glm::vec3(Canvas::screenW, Canvas::screenH, 0.0f));
-                    background->setPosition(glm::vec3(0.0f + Canvas::screenW/2.0f, 0.0f + Canvas::screenH/2.0f, 0.0f));
-                    background->setColor(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-                    newScene->objects.push_back(background);
+                    //std::string id = "Background";
+                    //std::shared_ptr<GraphicObject> background = std::make_shared<RectangleObject>(ObjectType::Background, id);
+                    //background->setSize(glm::vec3(Canvas::screenW, Canvas::screenH, 0.0f));
+                    //background->setPosition(glm::vec3(0.0f + Canvas::screenW/2.0f, 0.0f + Canvas::screenH/2.0f, 0.0f));
+                    //background->setColor(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+                    //newScene->objects.push_back(background);
                     scenes.push_back(newScene);
                     isDraggingScene = false;
                 }

@@ -35,7 +35,7 @@ public:
 private:
     void initMesh();
 
-    glm::vec2 radii_{ 100.0f, 100.0f };   // (rx, ry)
+    glm::vec2 radii_{ 0.5f, 0.5f };   // (rx, ry)
     int        segments_{ 64 };           // rim vertex count
     GLuint strokeEBO_ = 0;
     GLsizei strokeIndexCount_ = 0;
