@@ -358,6 +358,54 @@ namespace Canvas {
 
     std::unique_ptr<Shader> shader;
 
+    void drawObject(std::shared_ptr<GraphicObject> obj) {
+        // 1) grab its transform
+        auto const& T = obj->getTransform();
+
+        // 2) build the “base” model matrix (we’ll reuse for both passes)
+        glm::mat4 translate = glm::translate(glm::mat4(1.0f),
+            T.position);
+        glm::mat4 rotate = glm::rotate(glm::mat4(1.0f),
+            glm::radians(-T.rotation.z),
+            glm::vec3{ 0,0,1 });
+        glm::mat4 baseScale = glm::scale(glm::mat4(1.0f),
+            { T.scale.x, T.scale.y, 1.0f });
+
+        // ── HALO PASS ──
+        if (obj == selectedObject) {
+            // turn off depth‐testing so the halo doesn’t write to (or get occluded by) the depth buffer
+            glDisable(GL_DEPTH_TEST);
+            // make it e.g. 10% larger:
+            float haloFactor = 1.08f;
+            glm::mat4 haloScale = glm::scale(glm::mat4(1.0f),
+                { T.scale.x * haloFactor,
+                    T.scale.y * haloFactor,
+                    1.0f });
+            glm::mat4 haloModel = translate * rotate * baseScale;
+            shader->setUniformMat4("uModel", haloModel);
+
+            // translucent yellow/orange
+            shader->setUniformVec4("uColor",
+                { 1.0f, 1.0f, 1.0f, 0.4f });
+            // draw only edges
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glLineWidth(2.0f);              // thickness of outline
+
+            obj->draw();
+
+            // restore
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            glLineWidth(1.0f);
+            glEnable(GL_DEPTH_TEST);
+        }
+
+        // ── NORMAL PASS ──
+        glm::mat4 model = translate * rotate * baseScale;
+        shader->setUniformMat4("uModel", model);
+        shader->setUniformVec4("uColor", obj->getMaterial().color);
+        obj->draw();
+	}
+
     void Canvas::render() {
         if (Timeline::currentScene) {
             if (Timeline::currentScene != currScene) {
@@ -443,7 +491,6 @@ namespace Canvas {
         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);       // Up direction 
         view = glm::lookAt(cameraEye, center, up);
 
-
         glBindFramebuffer(GL_FRAMEBUFFER, msFbo);
         glViewport(0, 0, newW, newH);
 
@@ -459,54 +506,42 @@ namespace Canvas {
 
         // 6) Draw shapes
         if (currScene) {
+            std::vector<std::shared_ptr<GraphicObject>> opaque;
+            std::vector<std::shared_ptr<GraphicObject>> transparent;
+
             for (auto& obj : currScene->objects) {
-
-                // 1) grab its transform
-                auto const& T = obj->getTransform();
-
-                // 2) build the “base” model matrix (we’ll reuse for both passes)
-                glm::mat4 translate = glm::translate(glm::mat4(1.0f),
-                    T.position);
-                glm::mat4 rotate = glm::rotate(glm::mat4(1.0f),
-                    glm::radians(-T.rotation.z),
-                    glm::vec3{ 0,0,1 });
-                glm::mat4 baseScale = glm::scale(glm::mat4(1.0f),
-                    { T.scale.x, T.scale.y, 1.0f });
-
-                // ── HALO PASS ──
-                if (obj == selectedObject) {
-                    // turn off depth‐testing so the halo doesn’t write to (or get occluded by) the depth buffer
-                    glDisable(GL_DEPTH_TEST);
-                    // make it e.g. 10% larger:
-                    float haloFactor = 1.08f;
-                    glm::mat4 haloScale = glm::scale(glm::mat4(1.0f),
-                        { T.scale.x * haloFactor,
-                            T.scale.y * haloFactor,
-                            1.0f });
-                    glm::mat4 haloModel = translate * rotate * baseScale;
-                    shader->setUniformMat4("uModel", haloModel);
-
-                    // translucent yellow/orange
-                    shader->setUniformVec4("uColor",
-                        { 1.0f, 1.0f, 1.0f, 0.4f });
-                    // draw only edges
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                    glLineWidth(2.0f);              // thickness of outline
-
-                    obj->draw();
-
-                    // restore
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                    glLineWidth(1.0f);
-                    glEnable(GL_DEPTH_TEST);
-                }
-
-                // ── NORMAL PASS ──
-                glm::mat4 model = translate * rotate * baseScale;
-                shader->setUniformMat4("uModel", model);
-                shader->setUniformVec4("uColor", obj->getMaterial().color);
-                obj->draw();
+                if (obj->getMaterial().color.a >= 1.0f)
+                    opaque.push_back(obj);
+                else
+                    transparent.push_back(obj);
             }
+
+            // Draw opaque normally
+            for (auto& obj : opaque) {
+                drawObject(obj);  // your existing per-object logic
+            }
+
+            // Sort transparent back-to-front
+            std::sort(transparent.begin(), transparent.end(),
+                [&](const auto& a, const auto& b) {
+                    glm::vec3 pa = a->getTransform().position;
+                    glm::vec3 pb = b->getTransform().position;
+
+                    float da = glm::dot(pa - cameraEye, pa - cameraEye);
+                    float db = glm::dot(pb - cameraEye, pb - cameraEye);
+
+                    return da > db;  // sort farthest first
+                });
+
+            // Draw transparent with depth mask off
+            glDepthMask(GL_FALSE);
+            for (auto& obj : transparent) {
+                auto T = obj->getTransform();
+                T.position.z += 0.0001f;  // pull slightly toward camera
+				obj->setPosition(T.position);
+                drawObject(obj);
+            }
+            glDepthMask(GL_TRUE);
         }
 
         glBindFramebuffer(GL_READ_FRAMEBUFFER, msFbo);
@@ -539,8 +574,6 @@ namespace Canvas {
                 io.MousePos.x - cm.x,
                 io.MousePos.y - cm.y
             };
-            // flip Y:
-            pixel.y = fboDrawH - pixel.y;
             glm::vec2 world = getClickWorld(pixel);
 
             if (selectedObject) {
@@ -555,7 +588,6 @@ namespace Canvas {
                     Canvas::clearSelected();
                 }
                 else {
-                    std::cout << "Hit object at (" << world.x << ", " << world.y << ")\n";
                     isDraggingObject = true;
                     dragOffset = glm::vec2(T.position.x, T.position.y) - world;
                 }
@@ -567,8 +599,6 @@ namespace Canvas {
                 io.MousePos.x - cm.x,
                 io.MousePos.y - cm.y
             };
-            // flip Y:
-            pixel.y = fboDrawH - pixel.y;
             glm::vec2 world = getClickWorld(pixel);
 
             if (io.MouseDown[ImGuiMouseButton_Left]) {

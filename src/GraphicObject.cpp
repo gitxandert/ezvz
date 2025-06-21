@@ -23,6 +23,33 @@ void GraphicObject::setPosition(const glm::vec3& p) {
     transform_.position = p; 
 }
 
+void GraphicObject::setZPosition(float z) {
+    const float zNear = 9.0f;
+    const float zFar = -90.0f;
+    const float bias = 3.0f;
+
+    if (z >= 0.0f) {
+        transform_.position.z = z * zNear;
+    }
+    else {
+        float t = -z;
+        t = std::pow(t, bias);
+        transform_.position.z = t * zFar;
+    }
+};
+
+float GraphicObject::getSliderFromZ() const {
+    const float zNear = 9.0f;
+    const float zFar = -90.0f;
+    const float bias = 3.0f;
+
+    float z = transform_.position.z;
+    if (z >= 0.0f)
+        return z / zNear;
+    else
+        return -std::pow(z / zFar, 1.0f / bias);
+}
+
 void GraphicObject::setRotation(const glm::vec3& rot) {
     transform_.rotation = rot;
 }
@@ -164,6 +191,9 @@ glm::vec2 GraphicObject::getParameterValue(int p_i) const {
         glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
         return { color.w, 0.0f };
     }
+    case 6: { // Stroke
+        return { stroke_, 0.0f };
+    }
     default:
         return { 0.0f, 0.0f };
     }
@@ -175,27 +205,35 @@ void GraphicObject::setParameter(int p_i, glm::vec2 value) {
         break;
     }
     case 1: {
+        setZPosition(value.x);
+		break;
+    }
+    case 2: {
         setRotation({ transform_.rotation.x, transform_.rotation.y, value.x });
         break;
     }
-    case 2: {
-        setSize({ value, getSize().z});
-        break;
-    }
     case 3: {
-        glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
-        setColor(ScenesPanel::hsv2rgb({ value, color.z, color.w }));
+        setSize({ value, getSize().z});
         break;
     }
     case 4: {
         glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
-        setColor(ScenesPanel::hsv2rgb({ color.x, color.y, value.x, color.w }));
+        setColor(ScenesPanel::hsv2rgb({ value, color.z, color.w }));
         break;
     }
     case 5: {
         glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
+        setColor(ScenesPanel::hsv2rgb({ color.x, color.y, value.x, color.w }));
+        break;
+    }
+    case 6: {
+        glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
         setColor(ScenesPanel::hsv2rgb({ color.x, color.y, color.z, value.x }));
         break;
+    }
+    case 7: {
+		setStroke(value.x);
+		break;
     }
     default: break;
     }
@@ -208,7 +246,6 @@ void GraphicObject::setNewMapBools(int paramIndex, bool isY) {
 }
 
 void GraphicObject::update() {
-    std::cout << "Updating graphic object\n";
     for (int parameter = 0; parameter < animations_.size(); ++parameter) {
         std::size_t currentAnimation = animationIndices_[parameter];
         if ((newMapBools_ & (1u << parameter)) != 0) {

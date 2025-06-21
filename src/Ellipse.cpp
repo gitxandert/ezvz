@@ -101,14 +101,17 @@ void EllipseObject::initMesh() {
             float cosT = std::cos(theta);
             float sinT = std::sin(theta);
 
-            float xInner = cosT * radii_.x;
-            float yInner = sinT * radii_.y;
+            float xOuter = cosT * radii_.x;
+            float yOuter = sinT * radii_.y;
 
-            float xOuter = cosT * (radii_.x + stroke_ * 0.5f);
-            float yOuter = sinT * (radii_.y + stroke_ * 0.5f);
+            float innerRadiusX = std::max(0.0f, radii_.x - stroke_ * 0.5f);
+            float innerRadiusY = std::max(0.0f, radii_.y - stroke_ * 0.5f);
 
-            float u = 0.5f + 0.5f * cosT;
-            float v = 0.5f + 0.5f * sinT;
+            float xInner = cosT * innerRadiusX;
+            float yInner = sinT * innerRadiusY;
+
+            float u = 0.5f - 0.5f * cosT;
+            float v = 0.5f - 0.5f * sinT;
 
             // outer first, then inner — makes strip winding consistent
             vertices.insert(vertices.end(), { xOuter, yOuter, u, v });

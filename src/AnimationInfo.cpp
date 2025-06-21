@@ -53,7 +53,7 @@ namespace AnimationInfo {
 			screenPoint = world;
 			break;
 		}
-		case 1: { // Rotation
+		case 2: { // Rotation
 			float xNorm = (screenPoint.x - aw_cm.x) / aw_sz.x;
 			screenPoint.x = xNorm * 720.0f - 360.0f;
 
@@ -61,30 +61,42 @@ namespace AnimationInfo {
 			screenPoint.y = yNorm * Canvas::screenH;
 			break;
 		}
-		case 2: { // Size
+		case 3: { // Size
 			glm::vec2 local = { screenPoint.x - Canvas::cm.x, screenPoint.y - Canvas::cm.y };  // pixel coords relative to Canvas
 			glm::vec2 world = Canvas::getClickWorld(local);   // convert to world-space at z = 0
 			screenPoint = world;
 			break;
 		}
-		case 3: [[fallthrough]];
 		case 4: [[fallthrough]];
-		case 5: { // Color (normalized)
+		case 5: [[fallthrough]];
+		case 6: { // Color (normalized)
 			float xNorm = (screenPoint.x - aw_cm.x) / aw_sz.x;
+			float yNorm = 1.0f - (screenPoint.y - aw_cm.y) / aw_sz.y;
+			screenPoint = glm::vec2(xNorm, yNorm);
+			break;
+		}
+		case 1: [[fallthrough]];
+		case 7: { // Z-Position and Stroke
+			float xNorm = (screenPoint.x - aw_cm.x) / aw_sz.x;
+			xNorm *= 2.0f;
+			xNorm -= 1.0f; // Normalize to [-1, 1]
 			float yNorm = 1.0f - (screenPoint.y - aw_cm.y) / aw_sz.y;
 			screenPoint = glm::vec2(xNorm, yNorm);
 			break;
 		}
 		default: break;
 		}
+
 		return screenPoint;
 	}
 
 	glm::vec2 getParameter(int p_i) {
 		switch (p_i) {
-		case 0:
+		case 0: // Position
 			return { Canvas::selectedObject->getTransform().position.x, Canvas::selectedObject->getTransform().position.y };
-		case 1: {
+		case 1:  // Z-Position
+			return { Canvas::selectedObject->getSliderFromZ(), 0.0f };
+		case 2: { // RotationZ
 			int index;
 			float y;
 			if (selectedAnimation > -1) {
@@ -99,11 +111,11 @@ namespace AnimationInfo {
 			}
 			return { Canvas::selectedObject->getTransform().rotation.z, y };
 		}
-		case 2:
+		case 3: // Size
 			return { Canvas::selectedObject->getSize().x, Canvas::selectedObject->getSize().y };
-		case 3:
+		case 4: // Color (Hue/Saturation)
 			return { ScenesPanel::rgb2hsv(Canvas::selectedObject->getMaterial().color).x, ScenesPanel::rgb2hsv(Canvas::selectedObject->getMaterial().color).y };
-		case 4: {
+		case 5: { // Brightness
 			int index;
 			float y;
 			if (selectedAnimation > -1) {
@@ -118,7 +130,7 @@ namespace AnimationInfo {
 			}
 			return { ScenesPanel::rgb2hsv(Canvas::selectedObject->getMaterial().color).z, y };
 		}
-		case 5: {
+		case 6: { // Alpha
 			int index;
 			float y;
 			if (selectedAnimation > -1) {
@@ -133,6 +145,8 @@ namespace AnimationInfo {
 			}
 			return { Canvas::selectedObject->getMaterial().color.w, y };
 		}
+		case 7: // Stroke
+			return { Canvas::selectedObject->getStroke(), 0.0f };
 		default:
 			return { 0.0,0.0 };
 		}
@@ -140,34 +154,41 @@ namespace AnimationInfo {
 
 	void setParameter(int p_i, glm::vec2 value) {
 		switch (p_i) {
-		case 0: {
+		case 0: { //Position
 			Transform transform = Canvas::selectedObject->getTransform();
 			Canvas::selectedObject->setPosition({ value, transform.position.z });
 			break;
 		}
-		case 1: {
+		case 1: { //Z-Position
+			Canvas::selectedObject->setZPosition(value.x);
+		}
+		case 2: { //Rotation
 			Transform transform = Canvas::selectedObject->getTransform();
 			Canvas::selectedObject->setRotation({ transform.rotation.x, transform.rotation.y, value.x });
 			break;
 		}
-		case 2: {
+		case 3: { //Size
 			glm::vec3 size = Canvas::selectedObject->getSize();
 			Canvas::selectedObject->setSize({ value, size.z });
 			break;
 		}
-		case 3: {
+		case 4: { //Hue/Saturation
 			glm::vec4 color = ScenesPanel::rgb2hsv(Canvas::selectedObject->getMaterial().color);
 			Canvas::selectedObject->setColor(ScenesPanel::hsv2rgb({ value, color.z, color.w }));
 			break;
 		}
-		case 4: {
+		case 5: { //Brightness
 			glm::vec4 color = ScenesPanel::rgb2hsv(Canvas::selectedObject->getMaterial().color);
 			Canvas::selectedObject->setColor(ScenesPanel::hsv2rgb({ color.x, color.y, value.x, color.w }));
 			break;
 		}
-		case 5: {
+		case 6: { //Alpha
 			glm::vec4 color = ScenesPanel::rgb2hsv(Canvas::selectedObject->getMaterial().color);
 			Canvas::selectedObject->setColor(ScenesPanel::hsv2rgb({ color.x, color.y, color.z, value.x }));
+			break;
+		}
+		case 7: { //Stroke
+			Canvas::selectedObject->setStroke(value.x);
 			break;
 		}
 		default: break;
@@ -198,7 +219,16 @@ namespace AnimationInfo {
 			}
 			break;
 		}
-		case 1: { // Rotation Z
+		case 1: { // Z-Position
+			ImGui::Text("z:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(80.0f);
+			if (ImGui::InputFloat("##ZPosition", &p_val.x, 0.0f, 0.0f, "%.3f")) {
+				points[pointsIndex]->setValue(p_val);
+				setParameter(parameterIndex, p_val);
+			}
+			break;
+		}
+		case 2: { // Rotation Z
 			ImGui::Text("rot:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##RotZ", &p_val.x, 0.0f, 0.0f, "%.3f")) {
@@ -207,7 +237,7 @@ namespace AnimationInfo {
 			}
 			break;
 		}
-		case 2: { // Size W/H
+		case 3: { // Size W/H
 			ImGui::Text("w:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(80.0f);
 			if (ImGui::InputFloat("##SizeW", &p_val.x, 0.0f, 0.0f, "%.3f")) {
@@ -223,7 +253,7 @@ namespace AnimationInfo {
 			}
 			break;
 		}
-		case 3: { // Hue / Saturation
+		case 4: { // Hue / Saturation
 			ImGui::Text("hue:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##HueX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
@@ -239,7 +269,7 @@ namespace AnimationInfo {
 			}
 			break;
 		}
-		case 4: { // Brightness
+		case 5: { // Brightness
 			ImGui::Text("br.:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##BrightnessX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
@@ -248,10 +278,19 @@ namespace AnimationInfo {
 			}
 			break;
 		}
-		case 5: { // Alpha
+		case 6: { // Alpha
 			ImGui::Text("alpha:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(52.0f);
 			if (ImGui::InputFloat("##AlphaX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
+				points[pointsIndex]->setValue(p_val);
+				setParameter(parameterIndex, p_val);
+			}
+			break;
+		}
+		case 7: { // Stroke
+			ImGui::Text("stroke:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(49.0f);
+			if (ImGui::InputFloat("##StrokeX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
 				points[pointsIndex]->setValue(p_val);
 				setParameter(parameterIndex, p_val);
 			}
@@ -287,7 +326,15 @@ namespace AnimationInfo {
 			}
 			break;
 		}
-		case 1: { // Rotation Z
+		case 1: { // Z-Position
+			ImGui::Text("   z:  "); ImGui::SameLine();
+			ImGui::SetNextItemWidth(80.0f);
+			if (ImGui::InputFloat("##ZPosition", &p_val.x, 0.0f, 0.0f, "%.3f")) {
+				paths[pathsIndex]->setEnd(p_val);
+			}
+			break;
+		}
+		case 2: { // Rotation Z
 			ImGui::Text("  rot: "); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##RotZ", &p_val.x, 0.0f, 0.0f, "%.3f")) {
@@ -295,7 +342,7 @@ namespace AnimationInfo {
 			}
 			break;
 		}
-		case 2: { // Size W/H
+		case 3: { // Size W/H
 			ImGui::Text("   w:  "); ImGui::SameLine();
 			ImGui::SetNextItemWidth(80.0f);
 			if (ImGui::InputFloat("##SizeW", &p_val.x, 0.0f, 0.0f, "%.3f")) {
@@ -309,7 +356,7 @@ namespace AnimationInfo {
 			}
 			break;
 		}
-		case 3: { // Hue / Saturation
+		case 4: { // Hue / Saturation
 			ImGui::Text("  hue: "); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##HueX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
@@ -323,7 +370,7 @@ namespace AnimationInfo {
 			}
 			break;
 		}
-		case 4: { // Brightness
+		case 5: { // Brightness
 			ImGui::Text("  br.  :"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(66.0f);
 			if (ImGui::InputFloat("##BrightnessX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
@@ -331,10 +378,18 @@ namespace AnimationInfo {
 			}
 			break;
 		}
-		case 5: { // Alpha
+		case 6: { // Alpha
 			ImGui::Text(" alpha:"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(52.0f);
 			if (ImGui::InputFloat("##AlphaX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
+				paths[pathsIndex]->setEnd(p_val);
+			}
+			break;
+		}
+		case 7: { // Stroke
+			ImGui::Text("stroke:"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(49.0f);
+			if (ImGui::InputFloat("##StrokeX", &p_val.x, 0.0f, 0.0f, "%.3f")) {
 				paths[pathsIndex]->setEnd(p_val);
 			}
 			break;
@@ -353,19 +408,25 @@ namespace AnimationInfo {
 			point = Canvas::worldToScreen({ point, 0.0f }, aw_cm, aw_sz);
 			break;
 		}
-		case 1: { // Rotation
+		case 2: { // Rotation
 			point.x = aw_cm.x + ((point.x + 360.0f) / 720.0f) * aw_sz.x;
 			point.y = aw_sz.y - (point.y / Canvas::screenH) * aw_sz.y + aw_cm.y;
 			break;
 		}
-		case 2: { // Size
+		case 3: { // Size
 			point = Canvas::worldToScreen({ point, 0.0f }, aw_cm, aw_sz);
 			break;
 		}
-		case 3: [[fallthrough]];
 		case 4: [[fallthrough]];
-		case 5: { // Color
+		case 5: [[fallthrough]];
+		case 6: { // Color
 			point.x = aw_cm.x + aw_sz.x * point.x;
+			point.y = aw_sz.y - aw_sz.y * point.y + aw_cm.y;
+			break;
+		}
+		case 1: [[fallthrough]];
+		case 7: { // Z-Position and Stroke
+			point.x = aw_cm.x + (point.x + 1.0f) / 2.0f * aw_sz.x;
 			point.y = aw_sz.y - aw_sz.y * point.y + aw_cm.y;
 			break;
 		}

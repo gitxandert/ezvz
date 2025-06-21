@@ -49,21 +49,21 @@ void RectangleObject::initMesh() {
 
     float halfW = size_.x * 0.5f;
     float halfH = size_.y * 0.5f;
-    float outerHalfW = halfW + stroke_ * 0.5f;
-    float outerHalfH = halfH + stroke_ * 0.5f;
+    float innerHalfW = std::max(0.0f, halfW - stroke_ * 0.5f);
+    float innerHalfH = std::max(0.0f, halfH - stroke_ * 0.5f);
 
     float vertices[] = {
         // Inner quad (indices 0–3)
-        -halfW, -halfH, 0.0f, // 0
-         halfW, -halfH, 0.0f, // 1
-         halfW,  halfH, 0.0f, // 2
-        -halfW,  halfH, 0.0f, // 3
+        -innerHalfW, -innerHalfH, 0.0f, // 0
+         innerHalfW, -innerHalfH, 0.0f, // 1
+         innerHalfW,  innerHalfH, 0.0f, // 2
+        -innerHalfW,  innerHalfH, 0.0f, // 3
 
         // Outer quad (indices 4–7)
-        -outerHalfW, -outerHalfH, 0.0f, // 4
-         outerHalfW, -outerHalfH, 0.0f, // 5
-         outerHalfW,  outerHalfH, 0.0f, // 6
-        -outerHalfW,  outerHalfH,  0.0f // 7
+        -halfW, -halfH, 0.0f, // 4
+         halfW, -halfH, 0.0f, // 5
+         halfW,  halfH, 0.0f, // 6
+        -halfW,  halfH,  0.0f // 7
     };
 
     // Indices for inner fill quad (2 triangles)

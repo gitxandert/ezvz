@@ -33,11 +33,13 @@ static constexpr const char* objectTypeNames[] = {
 
 enum class GraphicParameter : std::size_t {
     Position,
+    ZPosition,
     Rotation,
     Size,
     Hue_Sat,
     Brightness,
     Alpha,
+	Stroke,
     COUNT
 };
 
@@ -72,6 +74,8 @@ public:
     const Transform& getTransform() const;
 
     void setPosition(const glm::vec3& p);
+    void setZPosition(float z);
+    float getSliderFromZ() const;
     void setRotation(const glm::vec3& rot);
     void setScale(const glm::vec3& scl);
     // Uniform scaling helper
@@ -123,10 +127,10 @@ protected:
     Material       material_;
 
     bool filled_ = true;
-    float stroke_ = 2.0f;
+    float stroke_ = 0.1f;
 
     LoopType loopType_ = LoopType::Off;
-    std::array<std::size_t, 6> animationIndices_{};
+    std::array<std::size_t, 8> animationIndices_{};
     unsigned int noMoreAnimations_ = 0;
 
     std::array<std::vector<std::shared_ptr<Animation>>, static_cast<std::size_t>(GraphicParameter::COUNT)> animations_;

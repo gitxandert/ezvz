@@ -36,16 +36,21 @@ namespace ScenesPanel {
     int animPropIndex = 0;
     int mappingIndex = -1;
 
+    float nextZ = 0.0f;
+	float zStep = 0.0001f; // small step to avoid z-fighting
+
     const std::vector<std::string> parameters{
         "Position",
+        "Z-Position",
         "Rotation",
         "Size",
         "Hue/Sat.",
         "Brightness",
-        "Alpha"
+        "Alpha",
+        "Stroke"
     };
 
-    std::array<ImVec2, 6> minPos = { ImVec2{} };
+    std::array<ImVec2, 8> minPos = { ImVec2{} };
 
     // color conversion functions
     glm::vec4 rgb2hsv(const glm::vec4& c) {
@@ -120,6 +125,8 @@ namespace ScenesPanel {
                     }
                     default: break;
                     }
+					obj->setPosition({ 0.0f, 0.0f, nextZ });
+					nextZ += zStep; // increment z to avoid z-fighting
                     Timeline::currentScene->objects.push_back(obj);
                     ImGui::CloseCurrentPopup();
                 }
@@ -384,7 +391,6 @@ namespace ScenesPanel {
 
         if (!Timeline::scenes.empty()) {
             auto& scene = Timeline::scenes[activeScene];
-            std::cout << "objects.size() = " << scene->objects.size() << '\n';
             // --- header ---
             ImGui::TextUnformatted("Objects");
             ImGui::Separator();
@@ -498,50 +504,66 @@ namespace ScenesPanel {
 
                         hoverFunc(dl, minPos[0], avail, lh, 0);
 
+						// Z-Position
+						minPos[1] = ImGui::GetCursorScreenPos();
+
+                        static float zSlider = obj->getSliderFromZ();
+                        // --- Slider UI ---
+                        if (ImGui::SliderFloat("Z-Position", &zSlider, -1.0f, 1.0f, "%.3f", true)) {
+                            obj->setZPosition(zSlider);
+                        }
+
+						hoverFunc(dl, minPos[1], avail, lh, 1);
+
                         // Rotation
                         glm::vec3 rot = obj->getTransform().rotation;
 
-                        minPos[1] = ImGui::GetCursorScreenPos();
+                        minPos[2] = ImGui::GetCursorScreenPos();
 
-                        if (ImGui::DragFloat(parameters[1].c_str(), &rot.z, 0.5f, -360.0f, 360.0f, "%.3f°")) {
+                        if (ImGui::DragFloat(parameters[2].c_str(), &rot.z, 0.5f, -360.0f, 360.0f, "%.3f°")) {
                             obj->setRotation(rot);
                         }
 
-                        hoverFunc(dl, minPos[1], avail, lh, 1);
+                        hoverFunc(dl, minPos[2], avail, lh, 1);
 
                         // Size
                         glm::vec3 size = obj->getSize();
 
-                        minPos[2] = ImGui::GetCursorScreenPos();
+                        minPos[3] = ImGui::GetCursorScreenPos();
 
-                        if (ImGui::DragFloat2(parameters[2].c_str(), &size.x, 0.005f, -FLT_MAX, FLT_MAX, "%.3f"))
+                        if (ImGui::DragFloat2(parameters[3].c_str(), &size.x, 0.005f, -FLT_MAX, FLT_MAX, "%.3f"))
                             obj->setSize(size);
 
-                        hoverFunc(dl, minPos[2], avail, lh, 2);
+                        hoverFunc(dl, minPos[3], avail, lh, 3);
                     }
                     // Hue/Saturation
                     glm::vec4 col = rgb2hsv(obj->getMaterial().color);
 
-                    minPos[3] = ImGui::GetCursorScreenPos();
-
-                    if (ImGui::DragFloat2(parameters[3].c_str(), &col.x, 0.005f, 0.0f, 1.0f, "%.3f"))
-                        obj->setColor(hsv2rgb(col));
-
-					hoverFunc(dl, minPos[3], avail, lh, 3);
-                    
-					// Brightness
                     minPos[4] = ImGui::GetCursorScreenPos();
 
-                    if (ImGui::DragFloat(parameters[4].c_str(), &col.z, 0.005f, 0.0f, 1.0f, "%.3f"))
+                    if (ImGui::DragFloat2(parameters[4].c_str(), &col.x, 0.005f, 0.0f, 1.0f, "%.3f"))
                         obj->setColor(hsv2rgb(col));
 
 					hoverFunc(dl, minPos[4], avail, lh, 4);
-
-					// Alpha
+                    
+					// Brightness
                     minPos[5] = ImGui::GetCursorScreenPos();
 
-                    if (ImGui::DragFloat(parameters[5].c_str(), &col.w, 0.005f, 0.0f, 1.0f, "%.3f"))
+                    if (ImGui::DragFloat(parameters[5].c_str(), &col.z, 0.005f, 0.0f, 1.0f, "%.3f"))
                         obj->setColor(hsv2rgb(col));
+
+					hoverFunc(dl, minPos[5], avail, lh, 5);
+
+					// Alpha
+                    minPos[6] = ImGui::GetCursorScreenPos();
+
+                    if (ImGui::DragFloat(parameters[6].c_str(), &col.w, 0.005f, 0.0f, 1.0f, "%.3f"))
+                        obj->setColor(hsv2rgb(col));
+
+                    hoverFunc(dl, minPos[6], avail, lh, 6);
+
+					// Fill and Stroke
+					minPos[7] = ImGui::GetCursorScreenPos();
 
                     if (obj->getObjectType() != ObjectType::Line && obj->getObjectType() != ObjectType::Background) {
                         bool isFilled = obj->isFilled();
@@ -551,13 +573,12 @@ namespace ScenesPanel {
                         if (!obj->isFilled()) {
                             float stroke = obj->getStroke();
                             ImGui::SameLine();
-                            if (ImGui::DragFloat("##Stroke", &stroke, 0.005f, 0.005f, 10.0f, "%.3f", true)) {
+                            if (ImGui::DragFloat("##Stroke", &stroke, 0.005f, -1.0f, 1.0f, "%.3f", true)) {
                                 obj->setStroke(stroke);
                             }
+							hoverFunc(dl, minPos[7], avail, lh, 7);
                         }
                     }
-
-					hoverFunc(dl, minPos[5], avail, lh, 5);
 
                     drawRects(dl, avail, lh);
 
