@@ -31,6 +31,7 @@ void Animation::addPoint(std::shared_ptr<AnimationPoint>& newPoint) {
 }
 
 void Animation::updatePointsIndex() {
+    std::cout << "Updating pointsIndex\n";
     switch(animLoopType_){
     case LoopType::Off: {
         pointsIndex_++;
@@ -42,21 +43,20 @@ void Animation::updatePointsIndex() {
     }
     case LoopType::Sequence: {
         pointsIndex_++;
+        std::cout << "Updating pointsIndex through sequence\n";
         if (pointsIndex_ >= points_.size()) {
             if (animLoopType_ == LoopType::Off) {
                 pointsIndex_ = points_.size() - 1;
-                if (points_[pointsIndex_]->getLoopType() == LoopType::Off) {
-                    // We just moved past the final keypoint → clamp and finish.
-                    is_finished_ = true;
-                }
-                else {
-                    points_[pointsIndex_]->updatePathIndex();
-                }
             }
             else {
                 pointsIndex_ = 0;
             }
         }
+        if (points_[pointsIndex_]->getLoopType() != LoopType::Off) {
+            std::cout << "Updating pointsIndex\n";
+            points_[pointsIndex_]->updatePathIndex();
+        }
+
         break;
     }
     case LoopType::Random: {
@@ -67,6 +67,9 @@ void Animation::updatePointsIndex() {
         std::uniform_int_distribution<int> dist(0, points_.size() - 1);
         int random_index = dist(get_rng());
         pointsIndex_ = (std::size_t)(random_index);
+        if (points_[pointsIndex_]->getLoopType() != LoopType::Off) 
+            points_[pointsIndex_]->updatePathIndex();
+
         break;
     }
     }
@@ -86,9 +89,6 @@ glm::vec2 Animation::getValue(float t) {
 
     // 3) since we know pointsIndex_ is still valid...
     float duration = points_[pointsIndex_]->getDuration();
-
-    // 4) Update elapsedTime_ relative to the last startPoint_.
-    setElapsedTime(t);
 
     // ────────────────────────────────────────────────────────────────────────
     // 5) CASE A: Still “within” this point’s duration window
@@ -147,9 +147,7 @@ glm::vec2 Animation::getValue(float t) {
     if (!hasTrigger_ || (hasTrigger_ && isTriggered_)) {
         // Either no trigger is needed, or we just got a trigger exactly when it expired.
         // In both cases, advance to the next index.
-        if (points_[pointsIndex_]->getLoopType() != LoopType::Off)
-            points_[pointsIndex_]->updatePathIndex();
-        
+
         updatePointsIndex();
         std::cout << "is_finished = " << std::boolalpha << is_finished_ << '\n';
         totalWarpTime_ += duration;
@@ -224,23 +222,24 @@ void Animation::setEasingType(EasingType newType) {
 }
 
 float Animation::getEasedTime(float t) {
+    setElapsedTime(t); 
     totalElapsedTime_ = t - originalStartPoint_;
-    if (totalElapsedTime_ > totalDuration_) {
-        if (animLoopType_ == LoopType::Off) {
-            is_finished_ = true;
-            totalElapsedTime_ = totalDuration_;
-        }
-        else {
-            isTriggered_ = false;
-            totalElapsedTime_ = 0.000f;
-            originalStartPoint_ = t;
-            startPoint_ = t;
-            loopCount = 0;
-            totalWarpTime_ = 0.000f;
-            pointsIndex_ = 0;
-            loopCount = 0;
-        }
-    }
+    //if (totalElapsedTime_ > totalDuration_) {
+    //    if (animLoopType_ == LoopType::Off) {
+    //        is_finished_ = true;
+    //        totalElapsedTime_ = totalDuration_;
+    //    }
+    //    else {
+    //        isTriggered_ = false;
+    //        totalElapsedTime_ = 0.000f;
+    //        originalStartPoint_ = t;
+    //        startPoint_ = t;
+    //        loopCount = 0;
+    //        totalWarpTime_ = 0.000f;
+    //        pointsIndex_ = 0;
+    //        loopCount = 0;
+    //    }
+    //}
     
     float normElapsedTime = totalElapsedTime_ / totalDuration_;
 

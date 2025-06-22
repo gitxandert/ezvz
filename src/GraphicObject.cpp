@@ -24,30 +24,11 @@ void GraphicObject::setPosition(const glm::vec3& p) {
 }
 
 void GraphicObject::setZPosition(float z) {
-    const float zNear = 9.0f;
-    const float zFar = -90.0f;
-    const float bias = 3.0f;
-
-    if (z >= 0.0f) {
-        transform_.position.z = z * zNear;
-    }
-    else {
-        float t = -z;
-        t = std::pow(t, bias);
-        transform_.position.z = t * zFar;
-    }
+    transform_.position.z = z;
 };
 
-float GraphicObject::getSliderFromZ() const {
-    const float zNear = 9.0f;
-    const float zFar = -90.0f;
-    const float bias = 3.0f;
-
-    float z = transform_.position.z;
-    if (z >= 0.0f)
-        return z / zNear;
-    else
-        return -std::pow(z / zFar, 1.0f / bias);
+float GraphicObject::getZPosition() const {
+    return transform_.position.z;
 }
 
 void GraphicObject::setRotation(const glm::vec3& rot) {

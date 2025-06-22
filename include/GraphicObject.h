@@ -75,7 +75,7 @@ public:
 
     void setPosition(const glm::vec3& p);
     void setZPosition(float z);
-    float getSliderFromZ() const;
+    float getZPosition() const;
     void setRotation(const glm::vec3& rot);
     void setScale(const glm::vec3& scl);
     // Uniform scaling helper

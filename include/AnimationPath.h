@@ -86,6 +86,7 @@ inline float AnimationPath::easingFunction(float t) {
 
 inline glm::vec2 AnimationPath::updateValue(float t) {
 	// 1) force t into [0,1]
+	std::cout << "t = " << t << '\n';
 	t = glm::clamp(t, 0.0f, 1.0f);
 
 	if (pathType_ == PathType::DashedLine) {

@@ -48,21 +48,31 @@ namespace AnimationInfo {
 	glm::vec2 normalizeClick(glm::vec2 screenPoint, int param) {
 		switch (param) {
 		case 0: { // Position
-			glm::vec2 local = { screenPoint.x - Canvas::cm.x, screenPoint.y - Canvas::cm.y };  // pixel coords relative to Canvas
+			glm::vec2 local = { screenPoint.x - Canvas::fboDrawPos.x, screenPoint.y - Canvas::fboDrawPos.y };  // pixel coords relative to Canvas
 			glm::vec2 world = Canvas::getClickWorld(local);   // convert to world-space at z = 0
 			screenPoint = world;
 			break;
 		}
+		case 1: { // Z-Position
+			float xNorm = (screenPoint.x - Canvas::fboDrawPos.x) / aw_sz.x;
+			xNorm *= 99.0f;
+			xNorm -= 90.0f;
+			screenPoint.x = xNorm;
+
+			float yNorm = 1.0f - (screenPoint.y - Canvas::fboDrawPos.y) / aw_sz.y;
+			screenPoint.y = yNorm * Canvas::screenH;
+			break;
+		}
 		case 2: { // Rotation
-			float xNorm = (screenPoint.x - aw_cm.x) / aw_sz.x;
+			float xNorm = (screenPoint.x - Canvas::fboDrawPos.x) / aw_sz.x;
 			screenPoint.x = xNorm * 720.0f - 360.0f;
 
-			float yNorm = 1.0f - (screenPoint.y - aw_cm.y) / aw_sz.y;
+			float yNorm = 1.0f - (screenPoint.y - Canvas::fboDrawPos.y) / aw_sz.y;
 			screenPoint.y = yNorm * Canvas::screenH;
 			break;
 		}
 		case 3: { // Size
-			glm::vec2 local = { screenPoint.x - Canvas::cm.x, screenPoint.y - Canvas::cm.y };  // pixel coords relative to Canvas
+			glm::vec2 local = { screenPoint.x - Canvas::fboDrawPos.x, screenPoint.y - Canvas::fboDrawPos.y };  // pixel coords relative to Canvas
 			glm::vec2 world = Canvas::getClickWorld(local);   // convert to world-space at z = 0
 			screenPoint = world;
 			break;
@@ -70,17 +80,16 @@ namespace AnimationInfo {
 		case 4: [[fallthrough]];
 		case 5: [[fallthrough]];
 		case 6: { // Color (normalized)
-			float xNorm = (screenPoint.x - aw_cm.x) / aw_sz.x;
-			float yNorm = 1.0f - (screenPoint.y - aw_cm.y) / aw_sz.y;
+			float xNorm = (screenPoint.x - Canvas::fboDrawPos.x) / aw_sz.x;
+			float yNorm = 1.0f - (screenPoint.y - Canvas::fboDrawPos.y) / aw_sz.y;
 			screenPoint = glm::vec2(xNorm, yNorm);
 			break;
 		}
-		case 1: [[fallthrough]];
-		case 7: { // Z-Position and Stroke
-			float xNorm = (screenPoint.x - aw_cm.x) / aw_sz.x;
+		case 7: { // Stroke
+			float xNorm = (screenPoint.x - Canvas::fboDrawPos.x) / aw_sz.x;
 			xNorm *= 2.0f;
 			xNorm -= 1.0f; // Normalize to [-1, 1]
-			float yNorm = 1.0f - (screenPoint.y - aw_cm.y) / aw_sz.y;
+			float yNorm = 1.0f - (screenPoint.y - Canvas::fboDrawPos.y) / aw_sz.y;
 			screenPoint = glm::vec2(xNorm, yNorm);
 			break;
 		}
@@ -95,7 +104,7 @@ namespace AnimationInfo {
 		case 0: // Position
 			return { Canvas::selectedObject->getTransform().position.x, Canvas::selectedObject->getTransform().position.y };
 		case 1:  // Z-Position
-			return { Canvas::selectedObject->getSliderFromZ(), 0.0f };
+			return { Canvas::selectedObject->getZPosition(), aw_cm.y + aw_sz.y / 2 };
 		case 2: { // RotationZ
 			int index;
 			float y;
@@ -146,7 +155,7 @@ namespace AnimationInfo {
 			return { Canvas::selectedObject->getMaterial().color.w, y };
 		}
 		case 7: // Stroke
-			return { Canvas::selectedObject->getStroke(), 0.0f };
+			return { Canvas::selectedObject->getStroke(), 0.5f };
 		default:
 			return { 0.0,0.0 };
 		}
@@ -408,6 +417,11 @@ namespace AnimationInfo {
 			point = Canvas::worldToScreen({ point, 0.0f }, aw_cm, aw_sz);
 			break;
 		}
+		case 1: { // Z-Position
+			point.x = aw_cm.x + (point.x + 90.0f) / 99.0f * aw_sz.x;
+			point.y = aw_sz.y - (point.y / Canvas::screenH) * aw_sz.y + aw_cm.y;
+			break;
+		}
 		case 2: { // Rotation
 			point.x = aw_cm.x + ((point.x + 360.0f) / 720.0f) * aw_sz.x;
 			point.y = aw_sz.y - (point.y / Canvas::screenH) * aw_sz.y + aw_cm.y;
@@ -424,8 +438,7 @@ namespace AnimationInfo {
 			point.y = aw_sz.y - aw_sz.y * point.y + aw_cm.y;
 			break;
 		}
-		case 1: [[fallthrough]];
-		case 7: { // Z-Position and Stroke
+		case 7: { // Stroke
 			point.x = aw_cm.x + (point.x + 1.0f) / 2.0f * aw_sz.x;
 			point.y = aw_sz.y - aw_sz.y * point.y + aw_cm.y;
 			break;

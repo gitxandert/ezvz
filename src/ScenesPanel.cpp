@@ -497,8 +497,6 @@ namespace ScenesPanel {
                         minPos[0] = ImGui::GetCursorScreenPos();
 
                         if (ImGui::DragFloat2(parameters[0].c_str(), &worldPos.x, 0.005f, -FLT_MAX, FLT_MAX, "%.3f")) {
-                            worldPos.x = worldPos.x;
-                            worldPos.y = worldPos.y;
                             obj->setPosition(worldPos);
                         }
 
@@ -507,10 +505,9 @@ namespace ScenesPanel {
 						// Z-Position
 						minPos[1] = ImGui::GetCursorScreenPos();
 
-                        static float zSlider = obj->getSliderFromZ();
                         // --- Slider UI ---
-                        if (ImGui::SliderFloat("Z-Position", &zSlider, -1.0f, 1.0f, "%.3f", true)) {
-                            obj->setZPosition(zSlider);
+                        if (ImGui::DragFloat(parameters[1].c_str(), &worldPos.z, 0.001f, -90.0f, 9.0f, "%.3f")) {
+                            obj->setZPosition(worldPos.z);
                         }
 
 						hoverFunc(dl, minPos[1], avail, lh, 1);
@@ -520,11 +517,11 @@ namespace ScenesPanel {
 
                         minPos[2] = ImGui::GetCursorScreenPos();
 
-                        if (ImGui::DragFloat(parameters[2].c_str(), &rot.z, 0.5f, -360.0f, 360.0f, "%.3f°")) {
+                        if (ImGui::DragFloat(parameters[2].c_str(), &rot.z, 0.5f, -360.0f, 360.0f, "%.3f")) {
                             obj->setRotation(rot);
                         }
 
-                        hoverFunc(dl, minPos[2], avail, lh, 1);
+                        hoverFunc(dl, minPos[2], avail, lh, 2);
 
                         // Size
                         glm::vec3 size = obj->getSize();
