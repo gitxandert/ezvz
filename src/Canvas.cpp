@@ -42,12 +42,15 @@ namespace Canvas {
     std::shared_ptr<Scene> currScene;
 
     // helper to turn ImGui::MousePos → world‐space click
-    glm::vec2 getClickWorld(const glm::vec2& screenPos) {
+    glm::vec2 getClickWorld(const glm::vec2& canvasLocalPos) {
+        // Convert from canvas-local to NDC
+        // First: Normalize the canvas-local point to [0, 1] within the canvas
+        glm::vec2 norm = { canvasLocalPos.x / fboDrawW, canvasLocalPos.y / fboDrawH };
 
-        glm::vec2 viewportSize = { sz.x, sz.y };
+        // Then: Convert to NDC [-1, 1]
+        float x = norm.x * 2.0f - 1.0f;
+        float y = norm.y * 2.0f - 1.0f;
 
-        float x = (2.0f * screenPos.x) / viewportSize.x - 1.0f;
-        float y = (2.0f * screenPos.y) / viewportSize.y - 1.0f;
         glm::vec4 rayNDC = glm::vec4(x, y, -1.0f, 1.0f);
 
         glm::mat4 invVP = glm::inverse(projFullScreen * view);
@@ -55,9 +58,10 @@ namespace Canvas {
         rayWorldNear /= rayWorldNear.w;
 
         glm::vec3 rayDir = glm::normalize(glm::vec3(rayWorldNear) - cameraEye);
-        float t = (0.0f - cameraEye.z) / rayDir.z;  // intersection with z=0
+        float t = (0.0f - cameraEye.z) / rayDir.z;
         return cameraEye + t * rayDir;
     }
+
 
 
     glm::vec2 worldToScreen(glm::vec3 worldPos, const ImVec2& screenOrigin, const ImVec2& screenSize) {
