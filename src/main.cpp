@@ -182,10 +182,15 @@ int main() {
             if (ImGui::IsKeyPressed(ImGuiKey_Space)) {
                 GlobalTransport::isPlaying = !GlobalTransport::isPlaying;
                 if (GlobalTransport::isPlaying) {
-                    if (Timeline::currentScene)
+                    if (!Timeline::currentScene)
+						Timeline::currentScene = Timeline::scenes.empty() ? nullptr : Timeline::scenes.back();
+
+                    if(Timeline::currentScene)
                         GlobalTransport::currentTime = Timeline::currentScene->startTime / 1000.0f;
+
                     GlobalTransport::playStartTime = glfwGetTime() - GlobalTransport::currentTime;
                 }
+
                 for (auto& scene : Timeline::scenes)
                     scene->resetObjectAnimations();
             }

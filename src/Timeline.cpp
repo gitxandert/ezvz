@@ -210,7 +210,7 @@ namespace Timeline {
             }
 
             if(!currentScene) {
-                currentScene = scenes.empty() ? nullptr : scenes.back();
+                GlobalTransport::isPlaying = false;
 			}
 
             if (isDraggingScene) {
