@@ -56,8 +56,9 @@ namespace GlobalTransport {
         if (ImGui::Button(isPlaying ? "||" : ">")) {
             isPlaying = !isPlaying;
             if (isPlaying) {
-                if (Timeline::currentScene)
+                if (Timeline::currentScene) {
                     currentTime = Timeline::currentScene->startTime / 1000.0f;
+                }
                 playStartTime = glfwGetTime() - currentTime;
                 for (auto& scene : Timeline::scenes)
                     scene->resetObjectAnimations();
