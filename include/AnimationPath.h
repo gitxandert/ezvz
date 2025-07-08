@@ -2,12 +2,6 @@
 #include <glm/glm.hpp>
 #include <iostream>
 
-enum class PathType {
-	DashedLine,	// indicates a jump to the end value after the total duration
-	SolidLine
-	//, Curved	// implement later
-};
-
 enum class EasingType {
 	Linear,
 	EaseIn,
@@ -20,10 +14,9 @@ class AnimationPoint;
 
 class AnimationPath {
 public:
-	AnimationPath(glm::vec2 st, glm::vec2 en, PathType pt = PathType::SolidLine)
+	AnimationPath(glm::vec2 st, glm::vec2 en)
 	: start_(st)
 	, end_(en)
-	, pathType_(pt)
 	{
 		distance_ = end_ - start_;
 	}
@@ -63,7 +56,6 @@ private:
 	float fst_handle_ = 0.0f;
 	float snd_handle_ = 0.0f;
 	
-	PathType pathType_;
 	EasingType easing_ = EasingType::Linear;
 };
 
@@ -88,11 +80,6 @@ inline glm::vec2 AnimationPath::updateValue(float t) {
 	// 1) force t into [0,1]
 	std::cout << "t = " << t << '\n';
 	t = glm::clamp(t, 0.0f, 1.0f);
-
-	if (pathType_ == PathType::DashedLine) {
-		// until 100% stay at start_, then snap to end_
-		return (t < 1.0f) ? start_ : end_;
-	}
 
 	// 2) at exactly 100%, just return the end point
 	if (t >= 1.0f) {

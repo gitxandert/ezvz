@@ -92,12 +92,13 @@ void GraphicObject::resetAnimations(bool restart) {
 
 void GraphicObject::setMapped(int paramIndex, bool isY) {
     mapBools_ |= (1u << paramIndex);
-    if (paramIndex == 0 || paramIndex == 2 || paramIndex == 3) {
+    if (paramIndex == 0 || (paramIndex > 2 && paramIndex < 6)) {
         std::size_t mapIndex = 0;
 
         switch (paramIndex) {
-        case 2: mapIndex = 1; break;
-        case 3: mapIndex = 2; break;
+        case 3: mapIndex = 1; break;
+        case 4: mapIndex = 2; break;
+		case 5: mapIndex = 3; break;
         default: break;
         }
 
@@ -118,12 +119,13 @@ void GraphicObject::setMapped(int paramIndex, bool isY) {
 
 void GraphicObject::setUnmapped(int paramIndex, bool isY) {
     mapBools_ &= ~(1u << paramIndex);
-    if (paramIndex == 0 || paramIndex == 2 || paramIndex == 3) {
+    if (paramIndex == 0 || (paramIndex > 2 && paramIndex < 6)) {
         std::size_t mapIndex = 0;
 
         switch (paramIndex) {
-        case 2: mapIndex = 1; break;
-        case 3: mapIndex = 2; break;
+        case 3: mapIndex = 1; break;
+        case 4: mapIndex = 2; break;
+        case 5: mapIndex = 3; break;
         default: break;
         }
 
@@ -150,69 +152,82 @@ int GraphicObject::isMappedY(int paramIndex) const {
 }
 
 glm::vec2 GraphicObject::getParameterValue(int p_i) const {
-    switch (p_i) {
-    case 0: {
+	GraphicParameter param = static_cast<GraphicParameter>(p_i);
+    switch (param) {
+    case GraphicParameter::Position: {
         return { transform_.position.x, transform_.position.y };
     }
-    case 1: {
+    case GraphicParameter::ZPosition: {
+        return { transform_.position.z, 0.0f };
+    }
+    case GraphicParameter::Rotation: {
         return { transform_.rotation.z, 0.0f };
     }
-    case 2: {
+    case GraphicParameter::XY_Rotation: {
+        return { transform_.rotation.x, transform_.rotation.y };
+    }
+    case GraphicParameter::Size:{
         return { getSize().x, getSize().y};
     }
-    case 3: {
+    case GraphicParameter::Hue_Sat: {
         glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
         return { color.x, color.y };
     }
-    case 4: {
+    case GraphicParameter::Brightness: {
         glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
         return { color.z, 0.0f };
     }
-    case 5: {
+    case GraphicParameter::Alpha: {
         glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
         return { color.w, 0.0f };
     }
-    case 6: { // Stroke
+    case GraphicParameter::Stroke: { // Stroke
         return { stroke_, 0.0f };
     }
     default:
         return { 0.0f, 0.0f };
     }
 }
+
 void GraphicObject::setParameter(int p_i, glm::vec2 value) {
-    switch (p_i) {
-    case 0: {
+	GraphicParameter param = static_cast<GraphicParameter>(p_i);
+    switch (param) {
+    case GraphicParameter::Position: {
         setPosition({ value, transform_.position.z });
         break;
     }
-    case 1: {
+    case GraphicParameter::ZPosition: {
         setZPosition(value.x);
 		break;
     }
-    case 2: {
+    case GraphicParameter::Rotation: {
         setRotation({ transform_.rotation.x, transform_.rotation.y, value.x });
         break;
     }
-    case 3: {
+    case GraphicParameter::XY_Rotation: {
+		setRotation({ value.x, value.y, transform_.rotation.z });
+        break;
+    }
+    case GraphicParameter::Size: {
         setSize({ value, getSize().z});
         break;
     }
-    case 4: {
+    case GraphicParameter::Hue_Sat: {
         glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
         setColor(ScenesPanel::hsv2rgb({ value, color.z, color.w }));
         break;
     }
-    case 5: {
+    case GraphicParameter::Brightness: {
         glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
         setColor(ScenesPanel::hsv2rgb({ color.x, color.y, value.x, color.w }));
         break;
     }
-    case 6: {
+    case GraphicParameter::Alpha: {
         glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
         setColor(ScenesPanel::hsv2rgb({ color.x, color.y, color.z, value.x }));
         break;
     }
-    case 7: {
+    case GraphicParameter::Stroke: {
 		setStroke(value.x);
 		break;
     }
@@ -221,39 +236,102 @@ void GraphicObject::setParameter(int p_i, glm::vec2 value) {
 }
 
 void GraphicObject::setNewMapBools(int paramIndex, bool isY) {
-	newMapBools_ |= (1u << paramIndex);
-    if(isY)
-	    isNewMapY_ |= (isY << paramIndex);
+
+	int mapIndex = -1;
+
+    switch (paramIndex) {
+    case 0: { mapIndex = 0; break; }
+    case 3: { mapIndex = 1; break; }
+    case 4: { mapIndex = 2; break; }
+    case 5: { mapIndex = 3; break; }
+    default: break;
+    }
+
+    if (mapIndex > -1) {
+        unsigned int& currentState = isNewMapY_[mapIndex];
+        if (isY) {
+            if (currentState == 0)
+                currentState = 2; // Y-mapped
+            else if (currentState == 1)
+                currentState = 3; // Y-mapped and X-mapped
+        }
+        else {
+            if (currentState == 0)
+                currentState = 1; // X-mapped
+            else if (currentState == 2)
+                currentState = 3; // Y-mapped and X-mapped
+        }
+    }
+    newMapBools_ |= (1u << paramIndex);
 }
+
+void GraphicObject::updateYMappedParameter(int xyIndex, glm::vec2 value, bool isY) {
+    switch (xyIndex) {
+    case 0: { // Position
+        if (!isY) {
+            transform_.position.y = value.y;
+        }
+        else {
+            transform_.position.x = value.x;
+        }
+        break;
+    }
+    case 1: { // XY-Rotation
+        if (!isY) {
+            transform_.rotation.y = value.y;
+        }
+        else {
+            transform_.rotation.x = value.x;
+        }
+        break;
+    }
+    case 2: { // Size
+        if (!isY) {
+            setSize({ getSize().x, value.y, getSize().z });
+        }
+        else {
+            setSize({ value.x, getSize().y, getSize().z });
+        }
+        break;
+    }
+    case 3: { // Hue/Saturation
+        if (!isY) {
+            glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
+            setColor(ScenesPanel::hsv2rgb({ color.x, value.y, color.z, color.w }));
+        }
+        else {
+            glm::vec4 color = ScenesPanel::rgb2hsv(material_.color);
+            setColor(ScenesPanel::hsv2rgb({ value.x, color.y, color.z, color.w }));
+        }
+        break;
+    }
+    default: break;
+    }
+
+};
 
 void GraphicObject::update() {
     for (int parameter = 0; parameter < animations_.size(); ++parameter) {
         std::size_t currentAnimation = animationIndices_[parameter];
         if ((newMapBools_ & (1u << parameter)) != 0) {
+            int mapIndex = -1;
             switch (parameter) {
-            case 0: [[fallthrough]];
-            case 2: [[fallthrough]];
-            case 3: {
-                if ((isNewMapY_ & (1u << parameter)) != 0) {
-                    if (animations_[parameter].size() > 0) {
-                        if (!animations_[parameter][currentAnimation]->is_finished()) {
-                            glm::vec2 updateValue = animations_[parameter][currentAnimation]->getValue(GlobalTransport::currentTime * 1000.0f);
-                            transform_.position.x = updateValue.x;
-                        }
-                    }
-                }
-                else {
-                    if (animations_[parameter].size() > 0) {
-                        if (!animations_[parameter][currentAnimation]->is_finished()) {
-                            glm::vec2 updateValue = animations_[parameter][currentAnimation]->getValue(GlobalTransport::currentTime * 1000.0f);
-                            transform_.position.y = updateValue.y;
-                        }
-                    }
-                }
-                break;
-            }
+            case 0: { mapIndex = 0; break; }
+            case 3: { mapIndex = 1; break; }
+            case 4: { mapIndex = 2; break; }
+            case 5: { mapIndex = 3; break; }
             default: break;
             }
+
+            if (mapIndex > -1) {
+                if (animations_[parameter].size() > 0) {
+                    bool isY = (isNewMapY_[mapIndex] >= 2);
+                    if (!animations_[parameter][currentAnimation]->is_finished() && isNewMapY_[mapIndex] < 3) {
+                        glm::vec2 updateValue = animations_[parameter][currentAnimation]->getValue(GlobalTransport::currentTime * 1000.0f);
+                        updateYMappedParameter(mapIndex, updateValue, isY);
+                    }
+                }
+			}
         }
         else if (animations_[parameter].size() > 0 && (noMoreAnimations_ & (1u << parameter)) == 0) {
             bool animationIsFinished = animations_[parameter][currentAnimation]->is_finished();
@@ -270,7 +348,7 @@ void GraphicObject::update() {
     }
 
     newMapBools_ = 0;
-    isNewMapY_ = 0;
+    isNewMapY_ = { 0 };
 }
 
 

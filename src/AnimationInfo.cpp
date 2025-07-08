@@ -104,7 +104,7 @@ namespace AnimationInfo {
 		case 0: // Position
 			return { Canvas::selectedObject->getTransform().position.x, Canvas::selectedObject->getTransform().position.y };
 		case 1:  // Z-Position
-			return { Canvas::selectedObject->getZPosition(), aw_cm.y + aw_sz.y / 2 };
+			return { Canvas::selectedObject->getZPosition(),  aw_cm.y + aw_sz.y / 2 };
 		case 2: { // RotationZ
 			int index;
 			float y;

@@ -64,7 +64,13 @@ namespace MappingRanges {
 				return { -Canvas::screenH, Canvas::screenH * 2.0f };
 			}
 		}
-		case GraphicParameter::Rotation: {//Rotation
+		case GraphicParameter::ZPosition: { //Z-Position
+			input_drag_speed_ = 0.01f;
+			output_drag_speed_ = 0.01f;
+			return { -90.0f, 9.0f };
+		}
+		case GraphicParameter::Rotation: [[fallthrough]];
+		case GraphicParameter::XY_Rotation: {//Rotation
 			input_drag_speed_ = 0.01f;
 			output_drag_speed_ = 72.0f;
 			return { -360.0f, 360.0f };
@@ -87,6 +93,11 @@ namespace MappingRanges {
 			input_drag_speed_ = 0.01f;
 			output_drag_speed_ = 0.01f;
 			return { 0.0f, 1.0f };
+		}
+		case GraphicParameter::Stroke: { //Stroke
+			input_drag_speed_ = 0.01f;
+			output_drag_speed_ = 0.01f;
+			return { -10.0f, 10.0f };
 		}
 		default: return { 0.0f, 1.0f };
 		}
@@ -114,15 +125,32 @@ public:
 
 	void updateMappedObject(float value) {
 		if (auto obj = mapped_object.lock()) {
+			static std::vector<std::string> parameters{
+				"Position",
+				"Z-Position",
+				"Rotation",
+				"XY-Rotation",
+				"Size",
+				"Hue/Sat.",
+				"Brightness",
+				"Alpha",
+				"Stroke"
+			};
+			std::cout << "Updating " << parameters[static_cast<size_t>(g_param_)] << "'s "
+				<< (g_param_y_ ? "Y" : "X") << " value to " << value << '\n';
+
 			switch (g_param_) {
 			case GraphicParameter::Position: [[fallthrough]];
+			case GraphicParameter::XY_Rotation: [[fallthrough]];
 			case GraphicParameter::Size: [[fallthrough]];
 			case GraphicParameter::Hue_Sat: {
 				glm::vec2 param_value = obj->getParameterValue(static_cast<int>(g_param_));
+
 				if (!g_param_y_)
 					param_value.x = value;
 				else
 					param_value.y = value;
+
 				obj->setParameter(static_cast<int>(g_param_), param_value);
 				break;
 			}

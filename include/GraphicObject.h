@@ -32,14 +32,15 @@ static constexpr const char* objectTypeNames[] = {
 };
 
 enum class GraphicParameter : std::size_t {
-    Position,
-    ZPosition,
-    Rotation,
-    Size,
-    Hue_Sat,
-    Brightness,
-    Alpha,
-	Stroke,
+    Position=0, // y-mapped
+    ZPosition=1,
+    Rotation=2,
+    XY_Rotation=3, // y-mapped
+    Size=4, // y-mapped
+    Hue_Sat=5, // y-mapped
+    Brightness=6,
+    Alpha=7,
+	Stroke=8,
     COUNT
 };
 
@@ -105,6 +106,7 @@ public:
 
     // Lifecycle
     void update();
+    void GraphicObject::updateYMappedParameter(int xyIndex, glm::vec2 value, bool isY);
     virtual void draw() = 0;    // render via OpenGL/ImGui
 
     virtual glm::vec3 getSize() const = 0;
@@ -130,18 +132,18 @@ protected:
     float stroke_ = 0.1f;
 
     LoopType loopType_ = LoopType::Off;
-    std::array<std::size_t, 8> animationIndices_{};
+    std::array<std::size_t, static_cast<std::size_t>(GraphicParameter::COUNT)> animationIndices_{};
     unsigned int noMoreAnimations_ = 0;
 
     std::array<std::vector<std::shared_ptr<Animation>>, static_cast<std::size_t>(GraphicParameter::COUNT)> animations_;
 
     unsigned int mapBools_ = 0;  // mapBools_ is a bitmask, where each bit represents a parameter
-    std::array<unsigned int, 3> isMapY_ = { 0 };
+    std::array<unsigned int, 4> isMapY_ = { 0 };
     // isMapY_ is an array of bitmasks, where each bit represents if 
-    // parameters 0, 2, or 3 are only X mapped, only Y mapped, or both
+    // parameters 0, 3, 4, or 5 are only X mapped, only Y mapped, or both
     unsigned int newMapBools_ = 0;
     // newMapValues_ is a bitmask that signals if values in mapValues have been updated, 
     // and if they are, Animations are bypassed in favor of the new Map values
-	unsigned int isNewMapY_ = 0;
-    // isNewMapY_ is a bitmask, where each bit signals if the Y values of parameters 0, 2, or 3 are updated
+    std::array<unsigned int, 4> isNewMapY_ = { 0 };
+    // isNewMapY_ is a bitmask, where each bit signals if the Y values of parameters 0, 3, 4, or 5 are updated
 };
