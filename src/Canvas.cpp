@@ -369,9 +369,18 @@ namespace Canvas {
         // 2) build the “base” model matrix (we’ll reuse for both passes)
         glm::mat4 translate = glm::translate(glm::mat4(1.0f),
             T.position);
-        glm::mat4 rotate = glm::rotate(glm::mat4(1.0f),
-            glm::radians(-T.rotation.z),
+
+        glm::mat4 rotateZ = glm::rotate(glm::mat4(1.0f),
+            glm::radians(T.rotation.z),
             glm::vec3{ 0,0,1 });
+        glm::mat4 rotateY = glm::rotate(glm::mat4(1.0f),
+            glm::radians(T.rotation.y),
+            glm::vec3{ 0,1,0 });
+        glm::mat4 rotateX = glm::rotate(glm::mat4(1.0f),
+            glm::radians(T.rotation.x),
+            glm::vec3{ 1,0,0 });
+        glm::mat4 rotate = rotateZ * rotateY * rotateX;
+
         glm::mat4 baseScale = glm::scale(glm::mat4(1.0f),
             { T.scale.x, T.scale.y, 1.0f });
 
