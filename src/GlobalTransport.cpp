@@ -56,6 +56,7 @@ namespace GlobalTransport {
         if (ImGui::Button(isPlaying ? "||" : ">")) {
             isPlaying = !isPlaying;
             if (isPlaying) {
+                std::cout << "Is Playing\n";
                 if (Timeline::currentScene) {
                     currentTime = Timeline::currentScene->startTime / 1000.0f;
                 }

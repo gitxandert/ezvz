@@ -3,6 +3,7 @@
 
 void Animation::resetAnimation() {
     // — reset playhead
+	std::cout << "Resetting animation\n";
     pointsIndex_ = 0;
     loopCount = 0;
 
@@ -14,8 +15,8 @@ void Animation::resetAnimation() {
     easedElapsedTime_ = 0.f;
     totalWarpTime_ = 0.f;
 
-    originalStartPoint_ = GlobalTransport::currentTime * 1000.f;
-    startPoint_ = originalStartPoint_;
+    originalStartPoint_ = 0.0f;
+    startPoint_ = 0.0f;
 
     curValue_ = points_[0]->getValue();
 }
@@ -77,6 +78,7 @@ void Animation::updatePointsIndex() {
 
 void Animation::setElapsedTime(float t) {
     elapsedTime_ = t - startPoint_;
+    std::cout << " t: " << t << " - startPoint_: " << startPoint_ << " = elapsedTime_: " << elapsedTime_ << '\n';
 }
 
 glm::vec2 Animation::getValue(float t) {
@@ -222,7 +224,8 @@ void Animation::setEasingType(EasingType newType) {
 }
 
 float Animation::getEasedTime(float t) {
-    setElapsedTime(t); 
+    setElapsedTime(t);
+
     totalElapsedTime_ = t - originalStartPoint_;
     //if (totalElapsedTime_ > totalDuration_) {
     //    if (animLoopType_ == LoopType::Off) {

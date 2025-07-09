@@ -24,8 +24,9 @@ struct Scene {
 	float sceneLength() { return endTime - startTime; }
 
 	void resetObjectAnimations() {
+		std::cout << "Resetting object animations for scene\n";
 		for (auto& obj : objects) {
-			obj->resetAnimations();
+			obj->resetAnimations(true);
 		}
 	}
 

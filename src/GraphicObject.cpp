@@ -83,7 +83,7 @@ void GraphicObject::resetAnimations(bool restart) {
     for(auto& animationIndex : animationIndices_)
         animationIndex = 0;
 
-    for (std::size_t i = 0; i < animations_size(); ++i) {
+    for (std::size_t i = 0; i < animations_.size(); ++i) {
         for (auto& animation : animations_[i]) {
             animation->resetAnimation();
         }
