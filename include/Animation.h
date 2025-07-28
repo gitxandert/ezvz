@@ -13,6 +13,7 @@ class Animation {
 public:
 	// start is initialized as (parameter's current value, length of Scene)
 	Animation(std::shared_ptr<AnimationPoint>& start);
+	Animation(const std::shared_ptr<Animation>& other);
 
 	void addPoint(std::shared_ptr<AnimationPoint>& newPoint);
 

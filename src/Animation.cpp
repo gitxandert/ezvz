@@ -15,8 +15,8 @@ void Animation::resetAnimation() {
     easedElapsedTime_ = 0.f;
     totalWarpTime_ = 0.f;
 
-    originalStartPoint_ = 0.0f;
-    startPoint_ = 0.0f;
+    originalStartPoint_ = GlobalTransport::currentTime * 1000.0f;
+    startPoint_ = GlobalTransport::currentTime * 1000.0f;
 
     curValue_ = points_[0]->getValue();
 }
@@ -26,6 +26,35 @@ Animation::Animation(std::shared_ptr<AnimationPoint>& start){
     animLoopType_ = LoopType::Off;
     animEaseType_ = EasingType::Linear;
 }
+
+Animation::Animation(const std::shared_ptr<Animation>& other) {
+    points_.reserve(other->getPoints().size());
+    for (const auto& pt : other->getPoints()) {
+        if (pt) {
+            points_.emplace_back(pt->clone());
+        }
+    }
+
+    animLoopType_ = other->getLoopType();
+    animEaseType_ = other->getEasingType();
+
+    pointsIndex_ = other->pointsIndex_;
+    curValue_ = other->curValue_;
+    hasTrigger_ = other->hasTrigger_;
+    isTriggered_ = other->isTriggered_;
+    justStarted_ = other->justStarted_;
+    loopCount = other->loopCount;
+
+    elapsedTime_ = other->elapsedTime_;
+    startPoint_ = other->startPoint_;
+    originalStartPoint_ = other->originalStartPoint_;
+    totalElapsedTime_ = other->totalElapsedTime_;
+    totalDuration_ = other->totalDuration_;
+    totalWarpTime_ = other->totalWarpTime_;
+    easedElapsedTime_ = other->easedElapsedTime_;
+    is_finished_ = other->is_finished_;
+}
+
 
 void Animation::addPoint(std::shared_ptr<AnimationPoint>& newPoint) {
     points_.push_back(newPoint);
@@ -191,10 +220,20 @@ float Animation::easingFunction(float t) {
         return t;
     case EasingType::EaseIn:
         return t * t;
-    case EasingType::EaseOut:
-        return t * (2 - t);
-    case EasingType::EaseInOut:
-        return t < 0.5 ? (2 * t * t) : (-1 + (4 - 2 * t) * t);
+    case EasingType::EaseOut: {
+        float et = t * (2 - t);
+        if (et > 0.999) {
+            return 1.0f;
+        }
+        return et;
+    }
+    case EasingType::EaseInOut: {
+        float et = t < 0.5 ? (2 * t * t) : (-1 + (4 - 2 * t) * t);
+        if (et > 0.999) {
+            return 1.0f;
+        }
+        return et;
+    }
     default:
         return t;
     }

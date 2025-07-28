@@ -16,6 +16,9 @@ namespace AnimationInfo {
 
 	static bool showPoints = false;
 	static bool showAddPath = false;
+	static bool showDelete = false;
+	static bool showDuplicate = false;
+
 	static bool addPath = false;
 	static bool addingPoints = false;
 	std::size_t animation_index = -1;
@@ -35,6 +38,9 @@ namespace AnimationInfo {
 	void resetAnimationWindow() {
 		showPoints = false;
 		showAddPath = false;
+		showDuplicate = false;
+		showDelete = false;
+
 		addPath = false;
 		selectedAnimation = -1;
 		selectedPoint = -1;
@@ -729,6 +735,22 @@ namespace AnimationInfo {
 			}
 		}
 
+		if (showDuplicate) {
+			ImGui::SameLine();
+			if (ImGui::Button("Duplicate Animation")) {
+				std::shared_ptr<Animation> newAnimation = std::make_shared<Animation>(Canvas::selectedObject->getAnimations(animation_index)[selectedAnimation]);
+				Canvas::selectedObject->add_animation(newAnimation, animation_index);
+			}
+		}
+
+		if (showDelete) {
+			ImGui::SameLine();
+			if (ImGui::Button("Delete Animation")) {
+				Canvas::selectedObject->remove_animation(animation_index, selectedAnimation);
+				resetAnimationWindow();
+			}
+		}
+
 		if (showPoints) {
 			ImGui::SameLine();
 			if (ImGui::Button("Add Point")) {
@@ -761,6 +783,8 @@ namespace AnimationInfo {
 				if (ImGui::Selectable(selectableName.c_str(), is_selected)) {
 					if (!settingTrigger) {
 						showPoints = true;
+						showDelete = true;
+						showDuplicate = true;
 						if (selectedAnimation != i) {
 							selectedAnimation = i;
 							selectedPoint = -1;
@@ -769,6 +793,8 @@ namespace AnimationInfo {
 							selectedAnimation = -1;
 							selectedPoint = -1;
 							showPoints = false;
+							showDelete = false;
+							showDuplicate = false;
 						}
 					}
 					else {
@@ -936,6 +962,10 @@ namespace AnimationInfo {
 
 				ImGui::EndChild(/* Paths */);
 
+			}
+			else {
+				showAddPath = false;
+				addPath = false;
 			}
 			ImGui::EndChild(/* AnimationPoints */);
 

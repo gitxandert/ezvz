@@ -30,6 +30,25 @@ public:
     {
     }
 
+    std::shared_ptr<AnimationPoint> clone() const {
+        auto newPoint = std::make_shared<AnimationPoint>(value_, duration_);
+        newPoint->setLoopType(loopType_);
+
+        for (const auto& p : paths_) {
+            if (p) {
+                newPoint->addPath(p->clone());
+            }
+        }
+
+        for (const auto& wp : associatedPaths_) {
+            if (auto locked = wp.lock()) {
+                newPoint->addAssociatedPath(locked->clone());
+            }
+        }
+
+        return newPoint;
+    }
+
     glm::vec2 getValue();
     glm::vec2 getValue(float t);
     void setValue(glm::vec2 val);

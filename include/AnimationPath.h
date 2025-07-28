@@ -21,6 +21,8 @@ public:
 		distance_ = end_ - start_;
 	}
 
+	std::shared_ptr<AnimationPath> clone() const;
+
 	float easingFunction(float t);
 	void setEasingType(EasingType type) { easing_ = type; }
 	const EasingType& getEasingType() const { return easing_; }
@@ -58,6 +60,15 @@ private:
 	
 	EasingType easing_ = EasingType::Linear;
 };
+
+inline std::shared_ptr<AnimationPath> AnimationPath::clone() const {
+	auto newPath = std::make_shared<AnimationPath>(start_, end_);
+	newPath->setEasingType(easing_);
+	newPath->fst_handle_ = fst_handle_;
+	newPath->snd_handle_ = snd_handle_;
+	newPath->endPoint_ = endPoint_;  // copies the weak pointer
+	return newPath;
+}
 
 // t = elapsed time / duration
 inline float AnimationPath::easingFunction(float t) {
