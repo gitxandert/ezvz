@@ -8,6 +8,7 @@ class RectangleObject : public GraphicObject {
 public:
     // id: unique identifier, size: width and height in world units
     RectangleObject(ObjectType rect, std::string& id);
+    RectangleObject::RectangleObject(const std::shared_ptr<GraphicObject>& other, int count);
     ~RectangleObject();
 
     // Size accessors
