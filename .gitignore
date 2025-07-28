@@ -8,3 +8,4 @@ obj/
 glfw/
 glm/
 *.exe
+assets/audio/
