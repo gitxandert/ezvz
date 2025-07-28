@@ -181,11 +181,6 @@ int main() {
             // Play/Pause toggle
             if (ImGui::IsKeyPressed(ImGuiKey_Space)) {
 
-                for (auto& scene : Timeline::scenes) {
-                    std::cout << "I am resetting all of the scenes yo\n";
-                    scene->resetObjectAnimations();
-                }
-
                 GlobalTransport::isPlaying = !GlobalTransport::isPlaying;
                 if (GlobalTransport::isPlaying) {
                     if (!Timeline::currentScene)
@@ -196,6 +191,11 @@ int main() {
 
                     GlobalTransport::playStartTime = glfwGetTime() - GlobalTransport::currentTime;
 					std::cout << "current time = " << GlobalTransport::currentTime << "\n";
+                }
+
+                for (auto& scene : Timeline::scenes) {
+                    std::cout << "I am resetting all of the scenes yo\n";
+                    scene->resetObjectAnimations();
                 }
             }
         }
