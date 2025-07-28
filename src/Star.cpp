@@ -7,6 +7,12 @@ StarObject::StarObject(ObjectType type, std::string& id)
     : GraphicObject(type, id) {
 }
 
+StarObject::StarObject(const std::shared_ptr<GraphicObject>& other, int count)
+    : GraphicObject(other, count)
+{
+    setSize(other->getSize());
+}
+
 StarObject::~StarObject() {
     cleanup();
 }

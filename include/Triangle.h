@@ -7,6 +7,7 @@
 class TriangleObject : public GraphicObject {
 public:
     TriangleObject(ObjectType type, std::string& id);
+    TriangleObject::TriangleObject(const std::shared_ptr<GraphicObject>& other, int count);
     ~TriangleObject();
 
     // Size accessors

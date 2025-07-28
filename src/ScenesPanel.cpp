@@ -418,6 +418,40 @@ namespace ScenesPanel {
                         else
                             GlobalTransport::isLooping = false;
                     }
+                    if (ImGui::Button("Duplicate Object")) {
+                        std::shared_ptr<GraphicObject> dupObj;
+                        ObjectType dupType = Canvas::selectedObject->getObjectType();
+                        int& count = objectCount[static_cast<int>(dupType)];
+                        count++;
+                        switch (dupType)
+                        {
+                        case ObjectType::Line:
+                            dupObj = std::make_shared<LineObject>(Canvas::selectedObject, count);
+                            break;
+                        case ObjectType::Rectangle:
+                            dupObj = std::make_shared<RectangleObject>(Canvas::selectedObject, count);
+                            break;
+                        case ObjectType::Ellipse:
+                            dupObj = std::make_shared<EllipseObject>(Canvas::selectedObject, count);
+                            break;
+                        case ObjectType::Triangle:
+                            dupObj = std::make_shared<TriangleObject>(Canvas::selectedObject, count);
+                            break;
+                        case ObjectType::Star:
+                            dupObj = std::make_shared<StarObject>(Canvas::selectedObject, count);
+                            break;
+                        default:
+                            dupObj = std::make_shared<RectangleObject>(Canvas::selectedObject, count);
+                            break;
+                        }
+                        Timeline::currentScene->objects.emplace_back(dupObj);
+                    }
+
+                    ImGui::SameLine();
+                    if (ImGui::Button("Delete Object")) {
+                        std::vector<std::shared_ptr<GraphicObject>>& objects = Timeline::currentScene->objects;
+                        objects.erase(std::find(objects.begin(), objects.end(), Canvas::selectedObject));
+                    }
                 }
             }
 

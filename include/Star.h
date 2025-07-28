@@ -7,6 +7,7 @@
 class StarObject : public GraphicObject {
 public:
     StarObject(ObjectType type, std::string& id);
+    StarObject::StarObject(const std::shared_ptr<GraphicObject>& other, int count);
     ~StarObject();
 
     glm::vec3 getSize() const override;

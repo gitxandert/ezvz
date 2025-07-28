@@ -15,6 +15,12 @@ EllipseObject::EllipseObject(ObjectType ellipse,
 {
 }
 
+EllipseObject::EllipseObject(const std::shared_ptr<GraphicObject>& other, int count)
+    : GraphicObject(other, count)
+{
+    setSize(other->getSize());
+}
+
 EllipseObject::~EllipseObject() {
     cleanup();
 }

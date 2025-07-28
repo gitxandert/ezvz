@@ -7,6 +7,7 @@
 class LineObject : public GraphicObject {
 public:
     LineObject(ObjectType type, std::string& id);
+    LineObject::LineObject(const std::shared_ptr<GraphicObject>& other, int count);
     ~LineObject();
 
     glm::vec3 getSize() const override;

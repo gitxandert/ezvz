@@ -6,6 +6,12 @@ LineObject::LineObject(ObjectType type, std::string& id)
     : GraphicObject(type, id) {
 }
 
+LineObject::LineObject(const std::shared_ptr<GraphicObject>& other, int count)
+    : GraphicObject(other, count)
+{
+    setSize(other->getSize());
+}
+
 LineObject::~LineObject() {
     cleanup();
 }

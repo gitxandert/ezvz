@@ -5,6 +5,12 @@
 RectangleObject::RectangleObject(ObjectType rect, std::string& id) : GraphicObject(rect, id)
 {}
 
+RectangleObject::RectangleObject(const std::shared_ptr<GraphicObject>& other, int count)
+    : GraphicObject(other, count)
+{
+    setSize(other->getSize());
+}
+
 RectangleObject::~RectangleObject() {
     cleanup();
 }

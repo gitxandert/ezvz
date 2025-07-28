@@ -62,6 +62,7 @@ struct Material {
 class GraphicObject {
 public:
     GraphicObject(ObjectType type, const std::string& id);
+    GraphicObject(const std::shared_ptr<GraphicObject>& other, int count);
     virtual ~GraphicObject() = default;
 
     // Identification
@@ -91,6 +92,7 @@ public:
     // Animations functions
     int animations_size(int i=-1);
     void add_animation(std::shared_ptr<Animation> newAnimation, std::size_t animations_index);
+    void remove_animation(std::size_t animations_index, std::size_t selected_animation);
     std::vector<std::shared_ptr<Animation>>& getAnimations(std::size_t index);
     void resetAnimations(bool restart=true);
 
@@ -116,6 +118,9 @@ public:
     const LoopType const getLoopType();
 
     void updateAnimationIndex(int);
+    const std::array<std::size_t, static_cast<std::size_t>(GraphicParameter::COUNT)>& getAnimationIndices();
+    const unsigned int getNoMoreAnimations();
+    const unsigned int getMapBools();
 
     virtual void setFilled(bool filled) = 0;
     bool isFilled() const { return filled_; }

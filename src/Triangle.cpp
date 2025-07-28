@@ -6,6 +6,12 @@ TriangleObject::TriangleObject(ObjectType type, std::string& id)
     : GraphicObject(type, id) {
 }
 
+TriangleObject::TriangleObject(const std::shared_ptr<GraphicObject>& other, int count)
+    : GraphicObject(other, count)
+{
+    setSize(other->getSize());
+}
+
 TriangleObject::~TriangleObject() {
     cleanup();
 }

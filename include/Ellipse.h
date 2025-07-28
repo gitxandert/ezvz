@@ -10,6 +10,7 @@ class EllipseObject : public GraphicObject {
 public:
     // 'segments' = number of rim vertices (≥ 3).  Higher = smoother.
     EllipseObject(ObjectType ellipse, const std::string& id, int segments = 64);
+    EllipseObject::EllipseObject(const std::shared_ptr<GraphicObject>& other, int count);
     ~EllipseObject();
 
     // ── Size / radius ──────────────────────────────────────────────

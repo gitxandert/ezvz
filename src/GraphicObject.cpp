@@ -1,6 +1,33 @@
 #include "GraphicObject.h"
 
 GraphicObject::GraphicObject(ObjectType type, const std::string& id) : type_(type), id_(id) {}
+GraphicObject::GraphicObject(const std::shared_ptr<GraphicObject>& other, int count) {
+    // copy Animations
+    for (size_t av = 0; av < static_cast<size_t>(GraphicParameter::COUNT); av++) {
+        for (auto& a : other->getAnimations(av)) {
+            Animation copyAnimation{ a };
+            std::shared_ptr<Animation> copyPtr = std::make_shared<Animation>(copyAnimation);
+            animations_[av].emplace_back(copyPtr);
+        }
+    }
+
+    // copy Type, Transforms, indices, etc.
+    type_ = other->getObjectType();
+    transform_ = other->getTransform();
+    material_ = other->getMaterial();
+    filled_ = other->isFilled();
+    stroke_ = other->getStroke();
+    loopType_ = other->getLoopType();
+    animationIndices_ = other->getAnimationIndices();
+    noMoreAnimations_ = other->getNoMoreAnimations();
+    mapBools_ = other->getMapBools();
+
+    // assign ID
+    std::string copyId = other->getType();
+    copyId += "_";
+    copyId += std::to_string(count);
+    id_ = copyId;
+}
 
 const char* GraphicObject::getType() const {
     auto idx = static_cast<std::size_t>(type_);
@@ -70,6 +97,12 @@ int GraphicObject::animations_size(int i) {
 
 void GraphicObject::add_animation(std::shared_ptr<Animation> newAnimation, std::size_t animations_index) {
     animations_[animations_index].push_back(std::move(newAnimation));
+}
+
+void GraphicObject::remove_animation(std::size_t animations_index, std::size_t selected_animation) {
+    if (animations_index < animations_.size() && selected_animation < animations_[animations_index].size()) {
+        animations_[animations_index].erase(animations_[animations_index].begin() + selected_animation);
+    }
 }
 
 std::vector<std::shared_ptr<Animation>>& GraphicObject::getAnimations(std::size_t index) {
@@ -362,27 +395,30 @@ const LoopType const GraphicObject::getLoopType() {
 
 void GraphicObject::updateAnimationIndex(int parameter) {
     auto& currentAnimationIndex = animationIndices_[parameter];
-    std::cout << "currentAnimationIndex = " << currentAnimationIndex << '\n';
+    std::cout << "currentAnimationIndex = " << currentAnimationIndex;
 
     switch (loopType_) {
     case LoopType::Off: {
         animations_[parameter][currentAnimationIndex]->resetAnimation();
-        currentAnimationIndex++;
-        if (currentAnimationIndex >= animations_size(parameter)) {
-            currentAnimationIndex -= 1;
+        std::cout << "Updated currentAnimationIndex to " << currentAnimationIndex << '\n';
+        if (currentAnimationIndex + 1 >= animations_size(parameter)) {
             noMoreAnimations_ |= (1u << parameter);
         }
         else {
-            animations_[parameter][currentAnimationIndex]->resetAnimation();
+            currentAnimationIndex++;
         }
+        animations_[parameter][currentAnimationIndex]->resetAnimation();
         break;
     }
     case LoopType::Sequence: {
         animations_[parameter][currentAnimationIndex]->resetAnimation();
-        currentAnimationIndex++;
-        if (currentAnimationIndex >= animations_size(parameter)) {
+        if (currentAnimationIndex + 1 >= animations_size(parameter)) {
             currentAnimationIndex = 0;
         }
+        else {
+            currentAnimationIndex++;
+        }
+        std::cout << "Updated currentAnimationIndex to " << currentAnimationIndex << '\n';
         animations_[parameter][currentAnimationIndex]->resetAnimation();
         break;
     }
@@ -391,8 +427,21 @@ void GraphicObject::updateAnimationIndex(int parameter) {
         std::uniform_int_distribution<int> dist(0, animations_size(parameter) - 1);
         int random_index = dist(get_rng());
         currentAnimationIndex = (std::size_t)(random_index);
+        std::cout << "Updated currentAnimationIndex to " << currentAnimationIndex << '\n';
         animations_[parameter][currentAnimationIndex]->resetAnimation();
         break;
     }
     }
+}
+
+const std::array<std::size_t, static_cast<std::size_t>(GraphicParameter::COUNT)>& GraphicObject::getAnimationIndices() {
+    return animationIndices_;
+}
+
+const unsigned int GraphicObject::getNoMoreAnimations() {
+    return noMoreAnimations_;
+}
+
+const unsigned int GraphicObject::getMapBools() {
+    return mapBools_;
 }
