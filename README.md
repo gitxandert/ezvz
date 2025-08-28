@@ -3,7 +3,7 @@ audio-reactive visualizer made with C++, OpenGL, ImGUI, GLFW, and Glad
 
 ## watch the demo here
 <a href="https://www.youtube.com/watch?v=p2vvUSVbi0c" target="_blank_">
- <img src="assets/images/ezvz_thumb.png" alt="watch the video here">
+ <img src="assets/images/ezvz_thumb.png" alt="watch the video here" />
 </a>
 
 ## about
