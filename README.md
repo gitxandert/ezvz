@@ -2,7 +2,9 @@
 audio-reactive visualizer made with C++, OpenGL, ImGUI, GLFW, and Glad
 
 ## watch the demo here
-[![Watch the demo here](assets/images/ezvz_thumb.png)](https://www.youtube.com/watch?v=p2vvUSVbi0c)
+<a href="https://www.youtube.com/watch?v=p2vvUSVbi0c" target="_blank_">
+ <img src="assets/images/ezvz_thumb.png" alt="watch the video here">
+</a>
 
 ## about
 ezvz makes correlating audio with graphics really simple.  
